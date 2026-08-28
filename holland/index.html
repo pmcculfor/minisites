@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Holland, Michigan — weather &amp; waves</title>
+    <meta
+      name="description"
+      content="Current weather and Lake Michigan wave forecast for Holland, Michigan, plus a public guestbook. Open through September 3, 2026."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Nunito+Sans:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="horizon" aria-hidden="true"></div>
+    <main class="page">
+      <header class="masthead">
+        <p class="kicker">Lake Michigan · open through September 3, 2026</p>
+        <h1>Holland, Michigan</h1>
+        <p class="lede">Weather in town, wave forecast just offshore, and a guestbook for whoever stops by.</p>
+      </header>
+
+      <section id="closed" class="card closed-card" hidden>
+        <h2>This mini site has closed</h2>
+        <p>
+          Holland weather and waves ran through the end of September 3, 2026 (Eastern Time).
+          The guestbook is no longer taking comments.
+        </p>
+      </section>
+
+      <div id="live">
+        <article
+          id="conditions"
+          class="card conditions-card"
+          aria-busy="true"
+          aria-live="polite"
+        >
+          <h2 class="card-title">Conditions</h2>
+
+          <div id="conditions-loading" class="loading">
+            <span class="spinner" aria-hidden="true"></span>
+            <p>Loading Holland conditions…</p>
+          </div>
+
+          <p id="conditions-error" class="error" hidden></p>
+
+          <div id="conditions-data" hidden>
+            <div class="stats">
+              <div class="stat-block">
+                <p class="stat-label">Air</p>
+                <p id="temp" class="stat-value"></p>
+                <p id="wx-desc" class="stat-sub"></p>
+              </div>
+              <div class="stat-block">
+                <p class="stat-label">Waves</p>
+                <p id="waves" class="stat-value"></p>
+                <p id="wave-meta" class="stat-sub"></p>
+              </div>
+            </div>
+            <p id="wind" class="meta-line"></p>
+            <p id="as-of" class="meta-line as-of"></p>
+            <p class="forecast-note">
+              Wave height is a model forecast near the Holland buoy, not a live buoy reading.
+              Not for navigation or swim safety.
+            </p>
+          </div>
+        </article>
+
+        <section id="comments" class="card comments-card">
+          <h2 class="card-title">How’s the day?</h2>
+          <p class="comments-intro">
+            Anyone can leave a note. No account. Comments are public.
+          </p>
+
+          <form id="comment-form" novalidate>
+            <label class="hp" for="company">Company</label>
+            <input
+              class="hp"
+              id="company"
+              name="company"
+              type="text"
+              tabindex="-1"
+              autocomplete="off"
+            />
+
+            <label for="nickname">Name <span class="optional">(optional)</span></label>
+            <input
+              id="nickname"
+              name="nickname"
+              type="text"
+              maxlength="40"
+              placeholder="Anonymous"
+              autocomplete="nickname"
+            />
+
+            <label for="comment-text">Comment</label>
+            <textarea
+              id="comment-text"
+              name="text"
+              maxlength="500"
+              rows="4"
+              required
+              placeholder="Wind, water, beach, dinner…"
+            ></textarea>
+            <p class="char-count"><span id="char-count">0</span>/500</p>
+
+            <button type="submit" id="comment-submit">Post comment</button>
+            <p id="comment-status" class="form-status" role="status"></p>
+          </form>
+
+          <div id="comment-feed" class="comment-feed">
+            <p class="feed-loading">Loading comments…</p>
+          </div>
+        </section>
+      </div>
+
+      <footer class="site-footer">
+        <p>
+          Weather from
+          <a href="https://open-meteo.com/">Open-Meteo</a>
+          (CC BY 4.0). Waves from Open-Meteo ECMWF WAM, with National Weather Service
+          grid data if needed.
+        </p>
+        <p>Not a marine forecast product. Do not use this page for navigation or safety decisions.</p>
+      </footer>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
