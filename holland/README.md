@@ -59,7 +59,7 @@ If App Check is already enforced, localhost needs either:
 
 - **Weather:** Open-Meteo for Holland city (`42.7875, -86.1089`), °F and mph, Eastern Time.
 - **Waves:** Open-Meteo ECMWF WAM just offshore (`42.90, -86.50`). GFS Wave on Lake Michigan often returns zeros, so it is only a backup. If both miss, National Weather Service gridpoint `GRR/21,43` (Holland buoy area) is used. Labeled as a **forecast**.
-- **Comments:** optional name, 500-character text, honeypot, grouped by Eastern calendar day. Rendered as text only (no HTML).
+- **Comments:** each day’s tile has its own notes. Optional name, 500-character text, honeypot. Stored with that day’s `dayKey`. Rendered as text only (no HTML).
 
 Query `?previewClosed=1` to see the post–September 3 closed screen without waiting.
 

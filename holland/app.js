@@ -1,4 +1,4 @@
-import { initComments } from "./comments.js";
+import { createDayGuestbook, initComments } from "./comments.js";
 
 const TIME_ZONE = "America/Detroit";
 const LAST_OPEN_DAY = "2026-09-03";
@@ -296,22 +296,30 @@ function isDarkWeather(wx) {
 function renderTile(day) {
   const wxCode = day.currentWx ?? day.weatherCode;
   const wx = weatherClass(wxCode);
-  const classes = ["forecast-tile", wx];
-  if (isDarkWeather(wx)) classes.push("wx-dark");
+  const classes = ["forecast-tile"];
   if (day.isToday) classes.push("is-today");
   const tile = el("article", classes.join(" "));
-  tile.setAttribute("aria-label", `Forecast for ${day.dayKey}`);
+  tile.dataset.day = day.dayKey;
+  tile.setAttribute("aria-label", `Weather and notes for ${day.dayKey}`);
+
+  const skyClass = ["tile-sky", wx];
+  if (isDarkWeather(wx)) skyClass.push("wx-dark");
+  const sky = el("div", skyClass.join(" "));
+  const fade = el("div", "tile-sky-fade");
+  fade.setAttribute("aria-hidden", "true");
+  sky.append(fade);
+
   const labels = formatDayLabel(day.dayKey, day.isToday);
-  tile.append(el("p", "tile-kicker", labels.kicker), el("p", "tile-date", labels.date));
+  sky.append(el("p", "tile-kicker", labels.kicker), el("p", "tile-date", labels.date));
 
   const headlineTemp = day.currentTemp ?? day.high;
-  tile.append(el("p", "tile-temp", headlineTemp == null ? "—" : formatTemp(headlineTemp)));
+  sky.append(el("p", "tile-temp", headlineTemp == null ? "—" : formatTemp(headlineTemp)));
 
   if (day.high != null && day.low != null) {
-    tile.append(el("p", "tile-range", `H ${formatTemp(day.high)} / L ${formatTemp(day.low)}`));
+    sky.append(el("p", "tile-range", `H ${formatTemp(day.high)} / L ${formatTemp(day.low)}`));
   }
 
-  tile.append(el("p", "tile-wx", WMO[wxCode] || "—"));
+  sky.append(el("p", "tile-wx", WMO[wxCode] || "—"));
 
   const waveBits = [];
   if (day.isToday && day.waveNowM != null) {
@@ -324,16 +332,18 @@ function renderTile(day) {
   }
   const from = compassFromDegrees(day.waveDir);
   if (from) waveBits.push(from);
-  tile.append(el("p", "tile-waves", waveBits.join(" · ")));
+  sky.append(el("p", "tile-waves", waveBits.join(" · ")));
 
   const windSpeed = day.isToday ? day.currentWindMph ?? day.windMph : day.windMph;
   const windDir = day.isToday ? day.currentWindDir ?? day.windDir : day.windDir;
   const windFrom = compassFromDegrees(windDir);
   if (windSpeed != null) {
-    tile.append(
+    sky.append(
       el("p", "tile-wind", windFrom ? `Wind ${Math.round(windSpeed)} mph ${windFrom}` : `Wind ${Math.round(windSpeed)} mph`)
     );
   }
+
+  tile.append(sky, createDayGuestbook(day.dayKey));
   return tile;
 }
 
@@ -379,6 +389,7 @@ function initCarousel(scroller) {
   let startScroll = 0;
   scroller.addEventListener("pointerdown", (event) => {
     if (event.pointerType === "touch") return;
+    if (!event.target.closest(".tile-sky")) return;
     dragging = true;
     startX = event.clientX;
     startScroll = scroller.scrollLeft;
@@ -465,7 +476,8 @@ function applyClosedState(closed) {
 
 const closed = isSiteClosed();
 applyClosedState(closed);
-if (!closed) {
-  loadConditions();
+if (closed) {
+  initComments({ closed: true });
+} else {
+  loadConditions().then(() => initComments({ closed: false }));
 }
-initComments({ closed });

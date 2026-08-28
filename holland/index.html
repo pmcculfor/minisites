@@ -22,7 +22,7 @@
       <header class="masthead">
         <p class="kicker">Lake Michigan · open through September 3, 2026</p>
         <h1>Holland, Michigan</h1>
-        <p class="lede">Weather in town, wave forecast just offshore, and a guestbook for whoever stops by.</p>
+        <p class="lede">Weather in town, wave forecast just offshore, and a note on each day.</p>
       </header>
 
       <section id="closed" class="card closed-card" hidden>
@@ -59,16 +59,13 @@
                 id="forecast-scroller"
                 tabindex="0"
                 role="region"
-                aria-label="Daily weather and wave forecast. Swipe or use arrow keys."
+                aria-label="Daily weather, waves, and notes. Swipe or use arrow keys."
               ></div>
               <button type="button" class="forecast-nav" id="forecast-next" aria-label="Later days">
                 ›
               </button>
             </div>
-            <p class="forecast-hint">
-              Swipe to see more days.
-              <span class="wide-only"> Arrows move one day at a time; three days show at once.</span>
-            </p>
+            <p class="forecast-hint">Swipe to another day. Each tile has that day’s weather and notes.</p>
             <p id="as-of" class="meta-line as-of"></p>
             <p class="forecast-note">
               Wave height is a model forecast near the Holland buoy, not a live buoy reading.
@@ -76,53 +73,6 @@
             </p>
           </div>
         </article>
-
-        <section id="comments" class="card comments-card">
-          <h2 class="card-title">How’s the day?</h2>
-          <p class="comments-intro">
-            Anyone can leave a note. No account. Comments are public.
-          </p>
-
-          <form id="comment-form" novalidate>
-            <label class="hp" for="company">Company</label>
-            <input
-              class="hp"
-              id="company"
-              name="company"
-              type="text"
-              tabindex="-1"
-              autocomplete="off"
-            />
-
-            <label for="nickname">Name <span class="optional">(optional)</span></label>
-            <input
-              id="nickname"
-              name="nickname"
-              type="text"
-              maxlength="40"
-              placeholder="Anonymous"
-              autocomplete="nickname"
-            />
-
-            <label for="comment-text">Comment</label>
-            <textarea
-              id="comment-text"
-              name="text"
-              maxlength="500"
-              rows="4"
-              required
-              placeholder="Wind, water, beach, dinner…"
-            ></textarea>
-            <p class="char-count"><span id="char-count">0</span>/500</p>
-
-            <button type="submit" id="comment-submit">Post comment</button>
-            <p id="comment-status" class="form-status" role="status"></p>
-          </form>
-
-          <div id="comment-feed" class="comment-feed">
-            <p class="feed-loading">Loading comments…</p>
-          </div>
-        </section>
       </div>
 
       <footer class="site-footer">
