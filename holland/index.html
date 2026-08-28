@@ -40,7 +40,7 @@
           aria-busy="true"
           aria-live="polite"
         >
-          <h2 class="card-title">Conditions</h2>
+          <h2 class="card-title">Forecast</h2>
 
           <div id="conditions-loading" class="loading">
             <span class="spinner" aria-hidden="true"></span>
@@ -50,19 +50,25 @@
           <p id="conditions-error" class="error" hidden></p>
 
           <div id="conditions-data" hidden>
-            <div class="stats">
-              <div class="stat-block">
-                <p class="stat-label">Air</p>
-                <p id="temp" class="stat-value"></p>
-                <p id="wx-desc" class="stat-sub"></p>
-              </div>
-              <div class="stat-block">
-                <p class="stat-label">Waves</p>
-                <p id="waves" class="stat-value"></p>
-                <p id="wave-meta" class="stat-sub"></p>
-              </div>
+            <div class="forecast-wrap">
+              <button type="button" class="forecast-nav" id="forecast-prev" aria-label="Earlier days">
+                ‹
+              </button>
+              <div
+                class="forecast-scroller"
+                id="forecast-scroller"
+                tabindex="0"
+                role="region"
+                aria-label="Daily weather and wave forecast. Swipe or use arrow keys."
+              ></div>
+              <button type="button" class="forecast-nav" id="forecast-next" aria-label="Later days">
+                ›
+              </button>
             </div>
-            <p id="wind" class="meta-line"></p>
+            <p class="forecast-hint">
+              Swipe to see more days.
+              <span class="wide-only"> Arrows move one day at a time; three days show at once.</span>
+            </p>
             <p id="as-of" class="meta-line as-of"></p>
             <p class="forecast-note">
               Wave height is a model forecast near the Holland buoy, not a live buoy reading.
