@@ -113,7 +113,9 @@ export function createDayGuestbook(dayKey) {
 
   const photos = node("div", "photo-block");
   photos.append(node("h3", "guestbook-title", "Pictures"));
-  photos.append(node("p", "comments-intro", "Add a photo of this day. JPEG, PNG, WebP, or GIF up to 10 MB."));
+  photos.append(
+    node("p", "comments-intro", "Add a photo of this day. Phone pictures are shrunk before saving, so it should finish in a few seconds.")
+  );
 
   const uploadBtn = document.createElement("button");
   uploadBtn.type = "button";
@@ -124,7 +126,7 @@ export function createDayGuestbook(dayKey) {
   const fileInput = document.createElement("input");
   fileInput.type = "file";
   fileInput.className = "file-input";
-  fileInput.accept = "image/jpeg,image/png,image/webp,image/gif";
+  fileInput.accept = "image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,image/*";
   fileInput.dataset.photoInput = dayKey;
   photos.append(fileInput);
 
@@ -139,10 +141,20 @@ export function createDayGuestbook(dayKey) {
   return wrap;
 }
 
-function isSafeImageUrl(value) {
+const DATA_JPEG_RE = /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/;
+const MAX_INLINE_CHARS = 900000;
+
+function isSafeImageSrc(value) {
+  if (typeof value !== "string" || value.length < 12 || value.length > MAX_INLINE_CHARS) return false;
+  if (DATA_JPEG_RE.test(value)) return true;
   try {
     const url = new URL(value);
-    return url.protocol === "https:";
+    if (url.protocol !== "https:") return false;
+    return (
+      url.hostname === "firebasestorage.googleapis.com" ||
+      url.hostname.endsWith(".firebasestorage.app") ||
+      url.hostname.endsWith(".googleapis.com")
+    );
   } catch {
     return false;
   }
@@ -155,7 +167,7 @@ function renderPhotos(list, docs) {
     return;
   }
   for (const data of docs) {
-    if (!isSafeImageUrl(data.url)) continue;
+    if (!isSafeImageSrc(data.url)) continue;
     const img = document.createElement("img");
     img.src = data.url;
     img.alt = "Photo from this day";
@@ -191,16 +203,133 @@ function paintFeeds(docs) {
   }
 }
 
-const IMAGE_TYPES = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/gif": "gif",
-};
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+const MAX_INLINE_BINARY = 180 * 1024;
+const UPLOAD_MS = 45000;
 
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+function withTimeout(promise, ms, message) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
 
-function bindUploads({ addDoc, collection, db, serverTimestamp, storage, ref, uploadBytes, getDownloadURL, auth }) {
+function blobToJpegDataUrl(blob) {
+  return blob.arrayBuffer().then((buffer) => {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    const chunk = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+    }
+    return `data:image/jpeg;base64,${btoa(binary)}`;
+  });
+}
+
+async function bitmapFromBlob(blob) {
+  try {
+    return await createImageBitmap(blob, { imageOrientation: "from-image" });
+  } catch {
+    return await new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(blob);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(img);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error("unreadable"));
+      };
+      img.src = objectUrl;
+    });
+  }
+}
+
+function canvasToJpegBlob(canvas, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("compress-failed"));
+      },
+      "image/jpeg",
+      quality
+    );
+  });
+}
+
+async function compressToInlineJpeg(fileBytes, mimeType) {
+  const blob = new Blob([fileBytes], { type: mimeType || "image/jpeg" });
+  const source = await bitmapFromBlob(blob);
+  const origW = source.width;
+  const origH = source.height;
+  if (!origW || !origH) throw new Error("unreadable");
+
+  const attempts = [
+    { maxSide: 1024, quality: 0.7 },
+    { maxSide: 960, quality: 0.56 },
+    { maxSide: 800, quality: 0.48 },
+    { maxSide: 640, quality: 0.4 },
+  ];
+
+  let lastBlob = null;
+  for (const attempt of attempts) {
+    const scale = Math.min(1, attempt.maxSide / Math.max(origW, origH));
+    const width = Math.max(1, Math.round(origW * scale));
+    const height = Math.max(1, Math.round(origH * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("compress-failed");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, width, height);
+    ctx.drawImage(source, 0, 0, width, height);
+    lastBlob = await canvasToJpegBlob(canvas, attempt.quality);
+    if (lastBlob.size <= MAX_INLINE_BINARY) break;
+  }
+
+  if (source.close) source.close();
+  if (!lastBlob || lastBlob.size > MAX_INLINE_BINARY) throw new Error("too-large");
+  const dataUrl = await blobToJpegDataUrl(lastBlob);
+  if (dataUrl.length > MAX_INLINE_CHARS) throw new Error("too-large");
+  return dataUrl;
+}
+
+function uploadErrorMessage(error) {
+  const code = String(error?.code || error?.message || "");
+  if (code.includes("permission") || code.includes("PERMISSION")) {
+    return "Could not save the picture. Publish the latest firestore.rules from this repo in the Firebase console.";
+  }
+  if (code.includes("unauthenticated") || code.includes("anonymous")) {
+    return "Could not start an anonymous session for uploads.";
+  }
+  if (code.includes("app-check") || code.includes("recaptcha") || code.includes("AppCheck")) {
+    return "Could not save the picture. Check App Check and the reCAPTCHA site key for this domain.";
+  }
+  if (code.includes("timeout") || code.includes("timed out")) {
+    return "The picture took too long to save. Try a smaller photo or another network.";
+  }
+  if (code.includes("unreadable") || code.includes("compress-failed")) {
+    return "Could not read that picture. Try a JPEG or PNG.";
+  }
+  if (code.includes("too-large")) {
+    return "That picture is still too large after shrinking. Try another photo.";
+  }
+  return "Could not save the picture. Try again in a moment.";
+}
+
+function bindUploads({ addDoc, collection, db, serverTimestamp, auth }) {
   let lastUpload = 0;
 
   for (const btn of document.querySelectorAll(".photo-upload-btn")) {
@@ -215,8 +344,8 @@ function bindUploads({ addDoc, collection, db, serverTimestamp, storage, ref, up
     };
 
     btn.addEventListener("click", () => {
-      if (!storage) {
-        setStatus("Firebase Storage is not configured yet.", true);
+      if (!addDoc) {
+        setStatus("Firebase is not configured yet, so pictures cannot be saved.", true);
         return;
       }
       fileInput.click();
@@ -224,53 +353,64 @@ function bindUploads({ addDoc, collection, db, serverTimestamp, storage, ref, up
 
     fileInput.addEventListener("change", async () => {
       const file = fileInput.files?.[0];
-      fileInput.value = "";
       if (!file) return;
 
-      const ext = IMAGE_TYPES[file.type];
-      if (!ext) {
-        setStatus("Use a JPEG, PNG, WebP, or GIF.", true);
+      const mimeType = file.type || "";
+      const looksLikeImage = mimeType.startsWith("image/") || /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(file.name || "");
+      if (!looksLikeImage) {
+        fileInput.value = "";
+        setStatus("Use a photo file (JPEG, PNG, WebP, HEIC, or GIF).", true);
         return;
       }
       if (file.size > MAX_IMAGE_BYTES) {
-        setStatus("That picture is over 10 MB.", true);
+        fileInput.value = "";
+        setStatus("That picture is over 20 MB.", true);
         return;
       }
 
       const now = Date.now();
       if (now - lastUpload < 4000) {
+        fileInput.value = "";
         setStatus("Wait a few seconds before uploading again.", true);
         return;
       }
 
       const uid = auth?.currentUser?.uid;
       if (!uid) {
+        fileInput.value = "";
         setStatus("Could not start an anonymous session for uploads.", true);
         return;
       }
 
       btn.disabled = true;
-      setStatus("Uploading…");
+      setStatus("Reading picture…");
 
       try {
-        const path = `days/${dayKey}/${uid}_${now}.${ext}`;
-        const fileRef = ref(storage, path);
-        await uploadBytes(fileRef, file, { contentType: file.type });
-        const url = await getDownloadURL(fileRef);
-        await addDoc(collection(db, "photos"), {
-          dayKey,
-          url,
-          path,
-          createdAt: serverTimestamp(),
-        });
+        const fileBytes = new Uint8Array(await file.arrayBuffer());
+        fileInput.value = "";
+        setStatus("Shrinking picture…");
+        const url = await withTimeout(
+          compressToInlineJpeg(fileBytes, mimeType),
+          UPLOAD_MS,
+          "timeout"
+        );
+        setStatus("Saving picture…");
+        await withTimeout(
+          addDoc(collection(db, "photos"), {
+            dayKey,
+            url,
+            path: `days/${dayKey}/${uid}_${now}.jpg`,
+            createdAt: serverTimestamp(),
+          }),
+          UPLOAD_MS,
+          "timeout"
+        );
         lastUpload = now;
         setStatus("Uploaded.");
       } catch (error) {
         console.error(error);
-        setStatus(
-          "Could not upload. Enable Storage, publish storage.rules, and enforce App Check on Storage if you use it.",
-          true
-        );
+        fileInput.value = "";
+        setStatus(uploadErrorMessage(error), true);
       } finally {
         btn.disabled = false;
       }
@@ -380,13 +520,11 @@ export async function initComments({ closed }) {
     { getAuth, signInAnonymously },
     { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, limit },
     { initializeAppCheck, ReCaptchaV3Provider },
-    { getStorage, ref, uploadBytes, getDownloadURL },
   ] = await Promise.all([
     import("https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js"),
     import("https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js"),
     import("https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js"),
     import("https://www.gstatic.com/firebasejs/11.0.2/firebase-app-check.js"),
-    import("https://www.gstatic.com/firebasejs/11.0.2/firebase-storage.js"),
   ]);
 
   const app = initializeApp(firebaseConfig);
@@ -399,7 +537,6 @@ export async function initComments({ closed }) {
 
   const auth = getAuth(app);
   const db = getFirestore(app);
-  const storage = getStorage(app);
 
   try {
     await signInAnonymously(auth);
@@ -430,17 +567,17 @@ export async function initComments({ closed }) {
   );
 
   onSnapshot(
-    query(collection(db, "photos"), orderBy("createdAt", "desc"), limit(100)),
+    query(collection(db, "photos"), orderBy("createdAt", "desc"), limit(60)),
     (snap) => paintPhotos(snap.docs.map((doc) => doc.data())),
     (error) => {
       console.error(error);
       for (const list of photoLists) {
         list.replaceChildren();
-        list.append(node("p", "feed-setup", "Could not load pictures. Publish the photos Firestore rules."));
+        list.append(node("p", "feed-setup", "Could not load pictures. Check Firestore rules and App Check."));
       }
     }
   );
 
   bindForms({ addDoc, collection, db, serverTimestamp });
-  bindUploads({ addDoc, collection, db, serverTimestamp, storage, ref, uploadBytes, getDownloadURL, auth });
+  bindUploads({ addDoc, collection, db, serverTimestamp, auth });
 }
