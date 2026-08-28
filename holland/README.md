@@ -18,7 +18,7 @@ Weather and waves are fetched **once on page load** (no polling). A loading indi
 
 The repo root has a `.nojekyll` file so GitHub does not run Jekyll.
 
-## 2. Firebase (comments)
+## 2. Firebase (comments and pictures)
 
 GitHub Pages cannot store comments. You need a free Firebase project.
 
@@ -32,8 +32,10 @@ Do this **in order**. If you enforce App Check before the site key is in `fireba
 4. **Authentication → Settings → Authorized domains**: keep `localhost` and add `pmcculfor.github.io`.
 5. **Build → Firestore Database → Create**. Start in production mode (or test mode, then replace the rules immediately).
 6. Paste the contents of [`firestore.rules`](firestore.rules) into **Firestore → Rules** and publish.
+7. **Build → Storage → Get started**. Paste [`storage.rules`](storage.rules) into **Storage → Rules** and publish.
+8. App Check → **APIs**: enforce **Cloud Firestore** and **Cloud Storage** after a monitoring dry run.
 
-Rules allow public reads, anonymous creates only, no updates/deletes, length limits, and no writes after September 3, 2026 24:00 Eastern.
+Rules allow public reads, anonymous creates only, no updates/deletes, length/size limits, and no writes after September 3, 2026 24:00 Eastern. Pictures go in Storage under `days/YYYY-MM-DD/` (max 10 MB, images only). A `photos` Firestore document stores the public URL so each day’s tile can list them.
 
 ### App Check (so casual off-site writes fail)
 
@@ -43,8 +45,8 @@ This is not a perfect lock — someone can still copy a token from this live pag
 2. Allowed domains: `pmcculfor.github.io` and `localhost`.
 3. Copy the **site key** (not the secret) into `recaptchaSiteKey` in [`firebase-config.js`](firebase-config.js).
 4. Firebase → **App Check → Get started → Web** → reCAPTCHA v3 → paste the same site key.
-5. App Check → **APIs → Cloud Firestore → Enforce**.
-   - You can leave it in **monitoring** until you confirm a comment posts from the live page, then switch to **Enforce**.
+5. App Check → **APIs → Cloud Firestore** and **Cloud Storage → Enforce**.
+   - You can leave them in **monitoring** until you confirm a comment and a picture work from the live page, then switch to **Enforce**.
 
 Do **not** commit a service-account JSON file or the reCAPTCHA **secret** key.
 
@@ -60,9 +62,10 @@ If App Check is already enforced, localhost needs either:
 - **Weather:** Open-Meteo for Holland city (`42.7875, -86.1089`), °F and mph, Eastern Time.
 - **Waves:** Open-Meteo ECMWF WAM just offshore (`42.90, -86.50`). GFS Wave on Lake Michigan often returns zeros, so it is only a backup. If both miss, National Weather Service gridpoint `GRR/21,43` (Holland buoy area) is used. Labeled as a **forecast**.
 - **Comments:** each day’s tile has its own notes. Optional name, 500-character text, honeypot. Stored with that day’s `dayKey`. Rendered as text only (no HTML).
+- **Pictures:** upload button above a vertical list on that day. Files live in Firebase Storage; metadata in the `photos` collection.
 
 Query `?previewClosed=1` to see the post–September 3 closed screen without waiting.
 
 ## 4. After close
 
-On September 4, 2026 Eastern, visitors see the closed message. You can still delete leftover comments in the Firebase console. You can also disable Anonymous Auth or delete the Firebase project.
+On September 4, 2026 Eastern, visitors see the closed message. You can still delete leftover comments and pictures in the Firebase console. You can also disable Anonymous Auth or delete the Firebase project.

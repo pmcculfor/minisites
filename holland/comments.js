@@ -110,7 +110,73 @@ export function createDayGuestbook(dayKey) {
   form.append(node("p", "form-status", ""));
 
   wrap.append(form);
+
+  const photos = node("div", "photo-block");
+  photos.append(node("h3", "guestbook-title", "Pictures"));
+  photos.append(node("p", "comments-intro", "Add a photo of this day. JPEG, PNG, WebP, or GIF up to 10 MB."));
+
+  const uploadBtn = document.createElement("button");
+  uploadBtn.type = "button";
+  uploadBtn.className = "comment-submit photo-upload-btn";
+  uploadBtn.textContent = "Upload a picture";
+  photos.append(uploadBtn);
+
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.className = "file-input";
+  fileInput.accept = "image/jpeg,image/png,image/webp,image/gif";
+  fileInput.dataset.photoInput = dayKey;
+  photos.append(fileInput);
+
+  photos.append(node("p", "form-status photo-status", ""));
+
+  const list = node("div", "photo-list");
+  list.dataset.photoList = dayKey;
+  list.append(node("p", "feed-loading", "Loading pictures…"));
+  photos.append(list);
+
+  wrap.append(photos);
   return wrap;
+}
+
+function isSafeImageUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function renderPhotos(list, docs) {
+  list.replaceChildren();
+  if (!docs.length) {
+    list.append(node("p", "feed-empty", "No pictures yet."));
+    return;
+  }
+  for (const data of docs) {
+    if (!isSafeImageUrl(data.url)) continue;
+    const img = document.createElement("img");
+    img.src = data.url;
+    img.alt = "Photo from this day";
+    img.loading = "lazy";
+    list.append(img);
+  }
+  if (!list.children.length) {
+    list.append(node("p", "feed-empty", "No pictures yet."));
+  }
+}
+
+function paintPhotos(docs) {
+  const byDay = new Map();
+  for (const data of docs) {
+    const key = data.dayKey || "";
+    if (!byDay.has(key)) byDay.set(key, []);
+    byDay.get(key).push(data);
+  }
+  for (const list of document.querySelectorAll("[data-photo-list]")) {
+    renderPhotos(list, byDay.get(list.dataset.photoList) || []);
+  }
 }
 
 function paintFeeds(docs) {
@@ -122,6 +188,93 @@ function paintFeeds(docs) {
   }
   for (const feed of document.querySelectorAll("[data-comment-feed]")) {
     renderFeed(feed, byDay.get(feed.dataset.commentFeed) || []);
+  }
+}
+
+const IMAGE_TYPES = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+};
+
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
+function bindUploads({ addDoc, collection, db, serverTimestamp, storage, ref, uploadBytes, getDownloadURL, auth }) {
+  let lastUpload = 0;
+
+  for (const btn of document.querySelectorAll(".photo-upload-btn")) {
+    const block = btn.closest(".photo-block");
+    const fileInput = block.querySelector(".file-input");
+    const status = block.querySelector(".photo-status");
+    const dayKey = fileInput.dataset.photoInput;
+
+    const setStatus = (message, isError = false) => {
+      status.textContent = message;
+      status.classList.toggle("is-error", isError);
+    };
+
+    btn.addEventListener("click", () => {
+      if (!storage) {
+        setStatus("Firebase Storage is not configured yet.", true);
+        return;
+      }
+      fileInput.click();
+    });
+
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files?.[0];
+      fileInput.value = "";
+      if (!file) return;
+
+      const ext = IMAGE_TYPES[file.type];
+      if (!ext) {
+        setStatus("Use a JPEG, PNG, WebP, or GIF.", true);
+        return;
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        setStatus("That picture is over 10 MB.", true);
+        return;
+      }
+
+      const now = Date.now();
+      if (now - lastUpload < 4000) {
+        setStatus("Wait a few seconds before uploading again.", true);
+        return;
+      }
+
+      const uid = auth?.currentUser?.uid;
+      if (!uid) {
+        setStatus("Could not start an anonymous session for uploads.", true);
+        return;
+      }
+
+      btn.disabled = true;
+      setStatus("Uploading…");
+
+      try {
+        const path = `days/${dayKey}/${uid}_${now}.${ext}`;
+        const fileRef = ref(storage, path);
+        await uploadBytes(fileRef, file, { contentType: file.type });
+        const url = await getDownloadURL(fileRef);
+        await addDoc(collection(db, "photos"), {
+          dayKey,
+          url,
+          path,
+          createdAt: serverTimestamp(),
+        });
+        lastUpload = now;
+        setStatus("Uploaded.");
+      } catch (error) {
+        console.error(error);
+        setStatus(
+          "Could not upload. Enable Storage, publish storage.rules, and enforce App Check on Storage if you use it.",
+          true
+        );
+      } finally {
+        btn.disabled = false;
+      }
+    });
   }
 }
 
@@ -201,21 +354,24 @@ function bindForms({ addDoc, collection, db, serverTimestamp }) {
 export async function initComments({ closed }) {
   const forms = document.querySelectorAll(".day-comment-form");
   const feeds = document.querySelectorAll("[data-comment-feed]");
+  const photoLists = document.querySelectorAll("[data-photo-list]");
 
   if (closed || !forms.length) return;
+
+  const setupMessage =
+    "Notes and pictures are not connected yet. Add your Firebase keys in firebase-config.js (see README).";
 
   if (!isFirebaseConfigured()) {
     for (const feed of feeds) {
       feed.replaceChildren();
-      feed.append(
-        node(
-          "p",
-          "feed-setup",
-          "Notes are not connected yet. Add your Firebase keys in firebase-config.js (see README)."
-        )
-      );
+      feed.append(node("p", "feed-setup", setupMessage));
+    }
+    for (const list of photoLists) {
+      list.replaceChildren();
+      list.append(node("p", "feed-setup", setupMessage));
     }
     bindForms({});
+    bindUploads({});
     return;
   }
 
@@ -224,11 +380,13 @@ export async function initComments({ closed }) {
     { getAuth, signInAnonymously },
     { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, limit },
     { initializeAppCheck, ReCaptchaV3Provider },
+    { getStorage, ref, uploadBytes, getDownloadURL },
   ] = await Promise.all([
     import("https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js"),
     import("https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js"),
     import("https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js"),
     import("https://www.gstatic.com/firebasejs/11.0.2/firebase-app-check.js"),
+    import("https://www.gstatic.com/firebasejs/11.0.2/firebase-storage.js"),
   ]);
 
   const app = initializeApp(firebaseConfig);
@@ -241,6 +399,7 @@ export async function initComments({ closed }) {
 
   const auth = getAuth(app);
   const db = getFirestore(app);
+  const storage = getStorage(app);
 
   try {
     await signInAnonymously(auth);
@@ -270,5 +429,18 @@ export async function initComments({ closed }) {
     }
   );
 
+  onSnapshot(
+    query(collection(db, "photos"), orderBy("createdAt", "desc"), limit(100)),
+    (snap) => paintPhotos(snap.docs.map((doc) => doc.data())),
+    (error) => {
+      console.error(error);
+      for (const list of photoLists) {
+        list.replaceChildren();
+        list.append(node("p", "feed-setup", "Could not load pictures. Publish the photos Firestore rules."));
+      }
+    }
+  );
+
   bindForms({ addDoc, collection, db, serverTimestamp });
+  bindUploads({ addDoc, collection, db, serverTimestamp, storage, ref, uploadBytes, getDownloadURL, auth });
 }

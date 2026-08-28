@@ -19,11 +19,32 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time;
     }
 
+    function validPhoto() {
+      return request.resource.data.keys().hasOnly(['dayKey', 'url', 'path', 'createdAt'])
+        && request.resource.data.dayKey is string
+        && request.resource.data.dayKey.size() == 10
+        && request.resource.data.url is string
+        && request.resource.data.url.size() > 12
+        && request.resource.data.url.size() < 2000
+        && request.resource.data.path is string
+        && request.resource.data.path.size() < 400
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.createdAt == request.time;
+    }
+
     match /comments/{id} {
       allow read: if true;
       allow create: if request.auth != null
         && stillOpen()
         && validComment();
+      allow update, delete: if false;
+    }
+
+    match /photos/{id} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && stillOpen()
+        && validPhoto();
       allow update, delete: if false;
     }
   }
