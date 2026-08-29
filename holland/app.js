@@ -446,6 +446,15 @@ function initCarousel(scroller) {
     },
     { passive: false }
   );
+  scroller.addEventListener(
+    "wheel",
+    (event) => {
+      if (Math.abs(event.deltaY) < Math.abs(event.deltaX) || event.deltaY === 0) return;
+      event.preventDefault();
+      window.scrollBy(0, event.deltaY);
+    },
+    { passive: false }
+  );
 
   sync();
   window.addEventListener("resize", sync);
