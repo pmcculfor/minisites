@@ -32,12 +32,4 @@ export class ConditionsCard {
       this.root.setAttribute("aria-busy", "false");
     }
   }
-
-  mountCarousel(carouselElement) {
-    if (!carouselElement) return;
-    const scroller = this.root.querySelector("#forecast-scroller");
-    if (scroller && carouselElement !== scroller && !scroller.contains(carouselElement)) {
-      scroller.append(carouselElement);
-    }
-  }
 }

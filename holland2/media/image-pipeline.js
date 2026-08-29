@@ -1,22 +1,7 @@
 import { CONFIG } from "../config.js";
+import { withTimeout } from "../lib/timeout.js";
 
-function withTimeout(promise, ms, message) {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(message)), ms);
-    promise.then(
-      (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      (error) => {
-        clearTimeout(timer);
-        reject(error);
-      }
-    );
-  });
-}
-
-function looksLikeImage(file) {
+export function looksLikeImage(file) {
   const mimeType = file.type || "";
   return mimeType.startsWith("image/") || /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(file.name || "");
 }

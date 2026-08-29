@@ -52,6 +52,7 @@ export function mapPhotoError(error) {
   }
   if (code.includes("timeout") || code.includes("timed out")) return ERRORS.photoTimeout;
   if (code.includes("unreadable") || code.includes("compress-failed")) return ERRORS.photoUnreadable;
+  if (code === "file-too-large" || code.includes("file-too-large")) return ERRORS.photoFileTooLarge;
   if (code.includes("too-large")) return ERRORS.photoTooLarge;
   return ERRORS.photoGeneric;
 }

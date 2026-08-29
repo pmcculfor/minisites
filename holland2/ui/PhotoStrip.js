@@ -1,23 +1,9 @@
 import { CONFIG } from "../config.js";
 import { el, clear } from "../lib/dom.js";
 import { isSafeImageSrc } from "../lib/safe-url.js";
+import { withTimeout } from "../lib/timeout.js";
+import { looksLikeImage } from "../media/image-pipeline.js";
 import { ERRORS, mapPhotoError } from "./errors.js";
-
-function withTimeout(promise, ms, message) {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(message)), ms);
-    promise.then(
-      (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      (error) => {
-        clearTimeout(timer);
-        reject(error);
-      }
-    );
-  });
-}
 
 export class PhotoStrip {
   constructor(props) {
@@ -128,9 +114,7 @@ export class PhotoStrip {
     if (!file) return;
 
     const mimeType = file.type || "";
-    const looksLikeImage =
-      mimeType.startsWith("image/") || /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(file.name || "");
-    if (!looksLikeImage) {
+    if (!looksLikeImage(file)) {
       this._fileInput.value = "";
       this._setStatus(ERRORS.photoNotImage, true);
       return;
@@ -159,10 +143,14 @@ export class PhotoStrip {
     this._uploadBtn.disabled = true;
     this._setStatus(ERRORS.photoReading, false);
     try {
+      const fileBytes = new Uint8Array(await file.arrayBuffer());
       this._fileInput.value = "";
       this._setStatus(ERRORS.photoShrinking, false);
+      const source = new File([fileBytes], file.name || "photo.jpg", {
+        type: mimeType || "image/jpeg",
+      });
       const url = await withTimeout(
-        this._pipeline(file, {
+        this._pipeline(source, {
           limits: CONFIG.limits,
           ladder: CONFIG.image.ladder,
           timeoutMs: CONFIG.timeouts.uploadMs,

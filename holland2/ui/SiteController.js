@@ -4,11 +4,7 @@ import { groupBy } from "../lib/group.js";
 import { createRateLimiters } from "../lib/rate-limit.js";
 import { buildDays } from "../domain/day-builder.js";
 import { OpenMeteoWeatherProvider } from "../data/weather.js";
-import {
-  OpenMeteoMarineProvider,
-  NwsWaveProvider,
-  runProviderChain,
-} from "../data/waves.js";
+import { runProviderChain, waveProviders } from "../data/waves.js";
 import { fileToInlineJpeg } from "../media/image-pipeline.js";
 import { connectFirebase } from "../firebase/client.js";
 import { createStore } from "../firebase/store.js";
@@ -77,23 +73,10 @@ export class SiteController {
 
   async _load() {
     const weatherProvider = new OpenMeteoWeatherProvider(CONFIG);
-    const waveProviders = [
-      new OpenMeteoMarineProvider({
-        model: "ecmwf_wam025",
-        point: CONFIG.wavePoint,
-        config: CONFIG,
-      }),
-      new OpenMeteoMarineProvider({
-        model: "ncep_gfswave025",
-        point: CONFIG.wavePoint,
-        config: CONFIG,
-      }),
-      new NwsWaveProvider({ point: CONFIG.nwsPoint, config: CONFIG }),
-    ];
 
     const [weatherResult, wavesResult] = await Promise.allSettled([
       weatherProvider.fetch(),
-      runProviderChain(waveProviders),
+      runProviderChain(waveProviders(CONFIG)),
     ]);
     const weather = weatherResult.status === "fulfilled" ? weatherResult.value : null;
     const waves = wavesResult.status === "fulfilled" ? wavesResult.value : null;
@@ -130,9 +113,8 @@ export class SiteController {
       prevBtn: this._doc.getElementById("forecast-prev"),
       nextBtn: this._doc.getElementById("forecast-next"),
     });
-    this._conditions.mountCarousel(this._doc.getElementById("forecast-scroller"));
-    this._setPhase("ready", { asOf: this._asOfLine(weather, waves) });
     this._carousel.setTiles(this._tiles);
+    this._setPhase("ready", { asOf: this._asOfLine(weather, waves) });
     await this._connectFeeds();
   }
 
@@ -147,44 +129,52 @@ export class SiteController {
   }
 
   async _connectFeeds() {
-    const result = await connectFirebase();
-    if (!result.ok) {
-      this._tiles.forEach((tile) => {
-        tile.setFeedState("setup", ERRORS.firebaseUnconfigured);
-        tile.setListState("setup", ERRORS.firebaseUnconfigured);
+    try {
+      const result = await connectFirebase();
+      if (!result.ok) {
+        this._tiles.forEach((tile) => {
+          tile.setFeedState("setup", ERRORS.firebaseUnconfigured);
+          tile.setListState("setup", ERRORS.firebaseUnconfigured);
+        });
+        return;
+      }
+
+      const store = createStore(result.db, {
+        auth: result.auth,
+        config: CONFIG,
+        firestore: result.firestore,
+        canWrite: result.canWrite,
       });
-      return;
+      this._tiles.forEach((tile) => tile.attachStore(store));
+
+      this._unsubComments = store.subscribeComments(
+        (docs) => {
+          const byDay = groupBy(docs, (item) => item.dayKey);
+          this._tiles.forEach((tile) => tile.setComments(byDay.get(tile.dayKey) || []));
+        },
+        (error) => {
+          console.error(error);
+          this._tiles.forEach((tile) => tile.setFeedState("error", ERRORS.commentsSnapshot));
+        }
+      );
+
+      this._unsubPhotos = store.subscribePhotos(
+        (docs) => {
+          const byDay = groupBy(docs, (item) => item.dayKey);
+          this._tiles.forEach((tile) => tile.setPhotos(byDay.get(tile.dayKey) || []));
+        },
+        (error) => {
+          console.error(error);
+          this._tiles.forEach((tile) => tile.setListState("error", ERRORS.photosSnapshot));
+        }
+      );
+    } catch (error) {
+      console.error(error);
+      this._tiles.forEach((tile) => {
+        tile.setFeedState("error", ERRORS.commentsSnapshot);
+        tile.setListState("error", ERRORS.photosSnapshot);
+      });
     }
-
-    const store = createStore(result.db, {
-      auth: result.auth,
-      config: CONFIG,
-      firestore: result.firestore,
-      canWrite: result.canWrite,
-    });
-    this._tiles.forEach((tile) => tile.attachStore(store));
-
-    this._unsubComments = store.subscribeComments(
-      (docs) => {
-        const byDay = groupBy(docs, (item) => item.dayKey);
-        this._tiles.forEach((tile) => tile.setComments(byDay.get(tile.dayKey) || []));
-      },
-      (error) => {
-        console.error(error);
-        this._tiles.forEach((tile) => tile.setFeedState("error", ERRORS.commentsSnapshot));
-      }
-    );
-
-    this._unsubPhotos = store.subscribePhotos(
-      (docs) => {
-        const byDay = groupBy(docs, (item) => item.dayKey);
-        this._tiles.forEach((tile) => tile.setPhotos(byDay.get(tile.dayKey) || []));
-      },
-      (error) => {
-        console.error(error);
-        this._tiles.forEach((tile) => tile.setListState("error", ERRORS.photosSnapshot));
-      }
-    );
   }
 
   _teardownFeeds() {

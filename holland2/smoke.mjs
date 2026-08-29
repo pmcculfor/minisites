@@ -13,6 +13,7 @@ import {
 import { groupBy } from "./lib/group.js";
 import { isSafeImageSrc } from "./lib/safe-url.js";
 import { classify } from "./ui/ScrollCoordinator.js";
+import { ERRORS, mapPhotoError } from "./ui/errors.js";
 
 function assert(cond, message) {
   if (!cond) throw new Error(message);
@@ -78,6 +79,21 @@ assert(label.date === "Sep 3", `formatDayLabel date got ${label.date}`);
 assert(label.kicker === "Thu", `formatDayLabel kicker got ${label.kicker}`);
 const todayLabel = formatDayLabel("2026-09-03", { isCurrent: true, timeZone: "America/Detroit" });
 assert(todayLabel.kicker === "Today", "formatDayLabel today");
+const utcMidnight = new Date("2026-09-03");
+const trapDate = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/Detroit",
+  month: "short",
+  day: "numeric",
+}).format(utcMidnight);
+assert(
+  trapDate !== label.date,
+  `date-only UTC midnight trap: new Date("2026-09-03") formats as ${trapDate}, formatDayLabel is ${label.date}`
+);
+
+assert(
+  mapPhotoError({ message: "file-too-large" }) === ERRORS.photoFileTooLarge,
+  "file-too-large maps to photoFileTooLarge"
+);
 
 assert(formatWaveFt(null) === "—", "formatWaveFt null");
 assert(formatWaveFt(0) === "Calm", "formatWaveFt calm");

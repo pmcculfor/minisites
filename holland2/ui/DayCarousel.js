@@ -46,14 +46,6 @@ export class DayCarousel {
   setTiles(tiles) {
     this._tiles = tiles || [];
     this._scroller.replaceChildren(...this._tiles.map((tile) => tile.element));
-    if (!this._coordinator) {
-      this._coordinator = createScrollCoordinator({
-        scroller: this._scroller,
-        getPageScroller: () => window,
-        thresholdPx: CONFIG.scroll.axisThresholdPx,
-        isExemptTarget: (el) => Boolean(el.closest && el.closest(CONFIG.scroll.touchExemptSelector)),
-      });
-    }
     this._coordinator.bind();
     this._syncNav();
     if (typeof requestAnimationFrame === "function") {

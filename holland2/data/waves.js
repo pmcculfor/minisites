@@ -11,6 +11,22 @@ export function isUsableWave(height, period) {
   return true;
 }
 
+export function waveProviders(config) {
+  return [
+    new OpenMeteoMarineProvider({
+      model: "ecmwf_wam025",
+      point: config.wavePoint,
+      config,
+    }),
+    new OpenMeteoMarineProvider({
+      model: "ncep_gfswave025",
+      point: config.wavePoint,
+      config,
+    }),
+    new NwsWaveProvider({ point: config.nwsPoint, config }),
+  ];
+}
+
 export async function runProviderChain(providers, opts) {
   const options = opts || {};
   for (const provider of providers) {

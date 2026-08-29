@@ -28,14 +28,16 @@ export class Guestbook {
       el("p", { class: "feed-loading", text: ERRORS.feedLoadingNotes }),
     ]);
 
+    const companyId = `guestbook-company-${this.dayKey}`;
     this._honeypot = el("input", {
       class: "hp",
       type: "text",
       name: "company",
+      id: companyId,
       autocomplete: "off",
       tabIndex: -1,
     });
-    const hpLabel = el("label", { class: "hp", text: "Company" });
+    const hpLabel = el("label", { class: "hp", text: "Company", for: companyId });
 
     this._nameInput = el("input", {
       type: "text",
