@@ -1,1 +1,4 @@
-console.log("holland2 scaffold");
+import { SiteController } from "./ui/SiteController.js";
+
+const controller = SiteController.create(document);
+controller.start();
