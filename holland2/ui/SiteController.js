@@ -3,7 +3,7 @@ import { forecastWindow, formatClock, resolveClosed } from "../lib/time.js";
 import { groupBy } from "../lib/group.js";
 import { createRateLimiters } from "../lib/rate-limit.js";
 import { buildDays } from "../domain/day-builder.js";
-import { weatherProviders } from "../data/weather.js";
+import { fetchCityWeather } from "../data/weather.js";
 import { runProviderChain, waveProviders } from "../data/waves.js";
 import { fileToInlineJpeg } from "../media/image-pipeline.js";
 import { connectFirebase } from "../firebase/client.js";
@@ -76,9 +76,7 @@ export class SiteController {
     const { windowKeys, todayKey } = forecastWindow(CONFIG, now);
 
     const [weatherResult, wavesResult] = await Promise.allSettled([
-      runProviderChain(weatherProviders(CONFIG), {
-        emptyError: "No weather forecast was available for this location.",
-      }),
+      fetchCityWeather(CONFIG),
       runProviderChain(waveProviders(CONFIG)),
     ]);
     const weather = weatherResult.status === "fulfilled" ? weatherResult.value : null;

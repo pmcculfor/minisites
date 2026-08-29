@@ -16,6 +16,7 @@ import {
   applyHourlyExtrema,
   currentFromNwsPeriod,
   dailyFromNwsForecast,
+  mergeWeatherPayloads,
   nwsCompassToDeg,
   nwsTextToWmo,
   parseNwsWindMph,
@@ -235,6 +236,39 @@ const hourlyNow = pickHourlyCurrent(
 assert(hourlyNow.temperature === 79, "pick hourly current nearest past hour");
 const nwsCurrent = currentFromNwsPeriod(hourlyNow);
 assert(nwsCurrent.temperature_2m === 79 && nwsCurrent.weather_code === 0, "nws current maps to open-meteo shape");
+
+const mergedWx = mergeWeatherPayloads(
+  {
+    source: "National Weather Service · Holland, MI",
+    current: { temperature_2m: 78 },
+    daily: {
+      time: ["2026-08-29"],
+      temperature_2m_max: [80],
+      temperature_2m_min: [69],
+      weather_code: [80],
+      wx_label: ["Chance Rain Showers"],
+      wind_speed_10m_max: [12],
+      wind_direction_10m_dominant: [225],
+    },
+  },
+  {
+    source: "Open-Meteo",
+    current: { temperature_2m: 78.3 },
+    daily: {
+      time: ["2026-08-27", "2026-08-29"],
+      temperature_2m_max: [75, 79],
+      temperature_2m_min: [60, 62],
+      weather_code: [0, 3],
+      wx_label: ["", ""],
+      wind_speed_10m_max: [8, 10],
+      wind_direction_10m_dominant: [180, 220],
+    },
+  }
+);
+assert(mergedWx.source.startsWith("National Weather Service"), "merge keeps NWS source");
+assert(mergedWx.daily.time.join(",") === "2026-08-27,2026-08-29", "merge unions dates");
+assert(mergedWx.daily.temperature_2m_max[0] === 75, "merge fills past day from Open-Meteo");
+assert(mergedWx.daily.temperature_2m_max[1] === 80, "merge keeps NWS today high");
 
 const weatherOnlyDays = buildDays(
   {

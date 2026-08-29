@@ -72,7 +72,7 @@ Serve this folder as static files (any local server). ES modules require HTTP, n
 
 ## 3. What the page does
 
-- **Weather:** National Weather Service forecast for **Holland, MI** (grid from `42.7875, -86.1089`). Day tiles show that day’s high, with NWS high/low underneath. Open-Meteo at the same city point is the fallback. °F and mph, Eastern Time.
+- **Weather:** National Weather Service forecast for **Holland, MI** (grid from `42.7875, -86.1089`). Day tiles show that day’s high, with high/low underneath. Open-Meteo at the same city point fills days NWS does not publish (past trip days) and is the full fallback if NWS misses. °F and mph, Eastern Time.
 - **Waves:** Open-Meteo ECMWF WAM just offshore (`42.90, -86.50`). GFS Wave is a backup. If both miss, National Weather Service gridpoint data for the Holland buoy area is used. Copy is always **Waves** (today: `Waves now … · max …`) and includes wave period when the model reports it. Labeled as a **forecast**.
 - **Comments:** each day’s tile has its own notes, including days already past in the trip window. Optional name, 500-character text, honeypot. Stored with that day’s `dayKey`. Rendered as text only (no HTML). Horizontal swipe between days works on the whole tile (forms stay native). On small screens, fixed left/right arrows stay on screen while the page scrolls.
 - **Pictures:** upload button above a vertical list on that day. The browser shrinks the photo and saves it in the `photos` Firestore collection. Phone HEIC/JPEG files are accepted. Uploads time out with an error instead of spinning forever. Photos stack full width; the **page** is the vertical scroller (no inner photo list scrollbar).

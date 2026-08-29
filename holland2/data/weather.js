@@ -1,6 +1,7 @@
 import { CONFIG } from "../config.js";
 import { fetchJson } from "../lib/http.js";
 import { applyOpenMeteoWindow, detroitDayKey } from "../lib/time.js";
+import { isUsableProviderResult } from "./waves.js";
 
 const NWS_COMPASS_DEG = {
   N: 0,
@@ -230,4 +231,76 @@ NwsWeatherProvider.prototype.fetch = async function () {
 export function weatherProviders(config) {
   const cfg = config || CONFIG;
   return [new NwsWeatherProvider(cfg), new OpenMeteoWeatherProvider(cfg)];
+}
+
+function dailyRowMap(daily) {
+  const map = {};
+  if (!daily?.time) return map;
+  daily.time.forEach((dayKey, i) => {
+    map[dayKey] = {
+      temperature_2m_max: daily.temperature_2m_max?.[i] ?? null,
+      temperature_2m_min: daily.temperature_2m_min?.[i] ?? null,
+      weather_code: daily.weather_code?.[i] ?? null,
+      wx_label: daily.wx_label?.[i] || "",
+      wind_speed_10m_max: daily.wind_speed_10m_max?.[i] ?? null,
+      wind_direction_10m_dominant: daily.wind_direction_10m_dominant?.[i] ?? null,
+    };
+  });
+  return map;
+}
+
+function hasHighOrLow(row) {
+  return row && (row.temperature_2m_max != null || row.temperature_2m_min != null);
+}
+
+export function mergeWeatherPayloads(primary, fallback) {
+  if (!primary) return fallback || null;
+  if (!fallback) return primary;
+  const preferred = dailyRowMap(primary.daily);
+  const extra = dailyRowMap(fallback.daily);
+  const keys = [...new Set([...Object.keys(preferred), ...Object.keys(extra)])].sort();
+  const daily = {
+    time: [],
+    temperature_2m_max: [],
+    temperature_2m_min: [],
+    weather_code: [],
+    wx_label: [],
+    wind_speed_10m_max: [],
+    wind_direction_10m_dominant: [],
+  };
+  for (const key of keys) {
+    const row = hasHighOrLow(preferred[key]) ? preferred[key] : extra[key] || preferred[key];
+    if (!row) continue;
+    daily.time.push(key);
+    daily.temperature_2m_max.push(row.temperature_2m_max);
+    daily.temperature_2m_min.push(row.temperature_2m_min);
+    daily.weather_code.push(row.weather_code);
+    daily.wx_label.push(row.wx_label || "");
+    daily.wind_speed_10m_max.push(row.wind_speed_10m_max);
+    daily.wind_direction_10m_dominant.push(row.wind_direction_10m_dominant);
+  }
+  return {
+    current: primary.current || fallback.current,
+    daily,
+    source: primary.source,
+    fetchedAt: primary.fetchedAt || fallback.fetchedAt,
+  };
+}
+
+export async function fetchCityWeather(config, opts) {
+  const options = opts || {};
+  const results = [];
+  for (const provider of weatherProviders(config)) {
+    try {
+      const result = await provider.fetch();
+      if (isUsableProviderResult(result)) results.push(result);
+    } catch (error) {
+      if (options.log) options.log(error);
+      else console.error(error);
+    }
+  }
+  if (!results.length) {
+    throw new Error(options.emptyError || "No weather forecast was available for this location.");
+  }
+  return results.slice(1).reduce((merged, next) => mergeWeatherPayloads(merged, next), results[0]);
 }
