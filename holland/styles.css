@@ -28,7 +28,7 @@ body {
   max-width: 100%;
   overflow-x: clip;
   overscroll-behavior-x: none;
-  touch-action: manipulation;
+  touch-action: pan-x pan-y;
 }
 
 [hidden] {
