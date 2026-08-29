@@ -191,7 +191,7 @@ h1 {
   scrollbar-width: none;
   touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
-  background: var(--sand);
+  background: #e6d7bc;
   border-radius: 12px;
 }
 
@@ -219,6 +219,7 @@ h1 {
   overflow: hidden;
   background: var(--paper);
   border: 1px solid rgba(28, 42, 48, 0.08);
+  box-shadow: 0 10px 28px rgba(20, 53, 68, 0.12);
   min-width: 0;
   max-width: 100%;
   height: auto;
@@ -232,7 +233,9 @@ h1 {
 }
 
 .forecast-tile.is-today {
-  box-shadow: inset 0 0 0 2px rgba(28, 42, 48, 0.28);
+  box-shadow:
+    inset 0 0 0 2px rgba(28, 42, 48, 0.28),
+    0 10px 28px rgba(20, 53, 68, 0.12);
 }
 
 .tile-sky {
