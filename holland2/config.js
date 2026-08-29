@@ -13,6 +13,12 @@ export const CONFIG = {
     return "https://api.weather.gov/points/" + lat + "," + lon;
   },
   nwsHeaders: function () {
+    // Browser fetch cannot set User-Agent, and Accept: application/geo+json
+    // is not a CORS-safelisted value — both force a preflight that weather.gov
+    // often rejects, so the page would silently fall back to Open-Meteo.
+    if (typeof window !== "undefined" && typeof document !== "undefined") {
+      return {};
+    }
     return {
       Accept: "application/geo+json",
       "User-Agent": "holland2 (https://pmcculfor.github.io/minisites/holland2/; Holland MI weather)",
