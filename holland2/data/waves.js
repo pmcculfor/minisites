@@ -27,12 +27,19 @@ export function waveProviders(config) {
   ];
 }
 
+export function isUsableProviderResult(result) {
+  if (!result) return false;
+  if (Object.keys(result.dailyByDate || {}).length > 0) return true;
+  if (result.daily?.time?.length) return true;
+  return result.current != null;
+}
+
 export async function runProviderChain(providers, opts) {
   const options = opts || {};
   for (const provider of providers) {
     try {
       const result = await provider.fetch();
-      if (result && (Object.keys(result.dailyByDate || {}).length > 0 || result.current != null)) {
+      if (isUsableProviderResult(result)) {
         return result;
       }
     } catch (error) {
@@ -40,7 +47,7 @@ export async function runProviderChain(providers, opts) {
       else console.error(error);
     }
   }
-  throw new Error("No wave forecast was available for this location.");
+  throw new Error(options.emptyError || "No wave forecast was available for this location.");
 }
 
 function dailyMapFromOpenMeteo(daily, source) {
@@ -133,7 +140,7 @@ NwsWaveProvider.prototype.fetch = async function () {
   const config = this.config;
   const point = this.point || config.nwsPoint;
   const source = "National Weather Service";
-  const headers = { Accept: "application/geo+json" };
+  const headers = config.nwsHeaders();
   const points = await fetchJson(config.nwsPoints(point.lat, point.lon), {
     timeoutMs: config.timeouts.fetchMs,
     headers,

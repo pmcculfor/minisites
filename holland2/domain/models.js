@@ -13,6 +13,7 @@ export function conditions(fields) {
     lowF: asNumber(src.lowF),
     windMph: asNumber(src.windMph),
     windDirDeg: asNumber(src.windDirDeg),
+    wxLabel: src.wxLabel || null,
   };
 }
 
@@ -82,7 +83,7 @@ export function formatWaveFt(meters) {
 }
 
 export function tempHeadline(dayModel) {
-  const value = dayModel.observations?.tempF ?? dayModel.forecast?.highF;
+  const value = dayModel.forecast?.highF ?? dayModel.observations?.tempF;
   if (value == null) return "—";
   return formatTemp(value);
 }
@@ -95,20 +96,30 @@ export function windHeadline(dayModel) {
   return compass ? `Wind ${Math.round(speed)} mph ${compass}` : `Wind ${Math.round(speed)} mph`;
 }
 
+export function formatWavePeriod(seconds) {
+  if (seconds == null || Number.isNaN(Number(seconds))) return null;
+  const n = Number(seconds);
+  if (n <= 0) return null;
+  const rounded = Math.abs(n - Math.round(n)) < 0.05 ? String(Math.round(n)) : n.toFixed(1);
+  return `${rounded} s`;
+}
+
 export function waveHeadline(dayModel) {
   const waves = dayModel.waves || {};
   const now = waves.now;
   const max = waves.max;
   const compass = compassFromDegrees(max?.directionDeg ?? now?.directionDeg);
+  const period = formatWavePeriod(max?.periodS ?? now?.periodS);
   let bits;
   if (now) {
-    bits = [`Now ${formatWaveFt(now.heightM)}`];
+    bits = [`Waves now ${formatWaveFt(now.heightM)}`];
     if (max) bits.push(`max ${formatWaveFt(max.heightM)}`);
   } else if (max) {
     bits = [`Waves ${formatWaveFt(max.heightM)}`];
   } else {
     bits = [`Waves —`];
   }
+  if (period) bits.push(period);
   if (compass) bits.push(compass);
   return bits.join(" · ");
 }

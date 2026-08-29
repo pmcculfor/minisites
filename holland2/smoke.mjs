@@ -4,12 +4,24 @@ import { buildDays } from "./domain/day-builder.js";
 import { isUsableWave, runProviderChain } from "./data/waves.js";
 import {
   formatWaveFt,
+  formatWavePeriod,
+  tempHeadline,
   waveHeadline,
   windHeadline,
   conditions,
   day,
   waveObservation,
 } from "./domain/models.js";
+import {
+  applyHourlyExtrema,
+  currentFromNwsPeriod,
+  dailyFromNwsForecast,
+  mergeWeatherPayloads,
+  nwsCompassToDeg,
+  nwsTextToWmo,
+  parseNwsWindMph,
+  pickHourlyCurrent,
+} from "./data/weather.js";
 import { groupBy } from "./lib/group.js";
 import { isSafeImageSrc } from "./lib/safe-url.js";
 import { classify } from "./ui/ScrollCoordinator.js";
@@ -98,6 +110,10 @@ assert(
 assert(formatWaveFt(null) === "—", "formatWaveFt null");
 assert(formatWaveFt(0) === "Calm", "formatWaveFt calm");
 assert(formatWaveFt(0.5) === "1.6 ft", "formatWaveFt decimal");
+assert(formatWavePeriod(6) === "6 s", "formatWavePeriod whole");
+assert(formatWavePeriod(4.5) === "4.5 s", "formatWavePeriod tenths");
+assert(formatWavePeriod(null) === null, "formatWavePeriod null");
+assert(formatWavePeriod(0) === null, "formatWavePeriod zero");
 
 const currentDay = day({
   dayKey: "2026-08-29",
@@ -109,7 +125,8 @@ const currentDay = day({
     max: waveObservation({ heightM: 1.2, directionDeg: 270 }),
   },
 });
-assert(waveHeadline(currentDay) === "Now 1.3 ft · max 3.9 ft · W", `waveHeadline daily compass ${waveHeadline(currentDay)}`);
+assert(tempHeadline(currentDay) === "80°", `tempHeadline uses daily high, got ${tempHeadline(currentDay)}`);
+assert(waveHeadline(currentDay) === "Waves now 1.3 ft · max 3.9 ft · W", `waveHeadline daily compass ${waveHeadline(currentDay)}`);
 
 const nowOnly = day({
   dayKey: "2026-08-29",
@@ -118,7 +135,21 @@ const nowOnly = day({
   observations: null,
   waves: { now: waveObservation({ heightM: 0.4, directionDeg: 90 }), max: null },
 });
-assert(waveHeadline(nowOnly) === "Now 1.3 ft · E", `waveHeadline no max ${waveHeadline(nowOnly)}`);
+assert(waveHeadline(nowOnly) === "Waves now 1.3 ft · E", `waveHeadline no max ${waveHeadline(nowOnly)}`);
+
+const withPeriod = day({
+  dayKey: "2026-08-29",
+  isCurrent: true,
+  forecast: conditions({}),
+  waves: {
+    now: waveObservation({ heightM: 0.4, periodS: 4, directionDeg: 90 }),
+    max: waveObservation({ heightM: 1.2, periodS: 6, directionDeg: 270 }),
+  },
+});
+assert(
+  waveHeadline(withPeriod) === "Waves now 1.3 ft · max 3.9 ft · 6 s · W",
+  `waveHeadline period ${waveHeadline(withPeriod)}`
+);
 
 const none = day({
   dayKey: "2026-08-29",
@@ -129,6 +160,115 @@ assert(waveHeadline(none) === "Waves —", "waveHeadline empty");
 
 assert(windHeadline(none) === null, "windHeadline null");
 assert(windHeadline(currentDay) === "Wind 8 mph E", `windHeadline ${windHeadline(currentDay)}`);
+
+assert(nwsTextToWmo("Mostly Sunny") === 2, "nws mostly sunny");
+assert(nwsTextToWmo("Sunny") === 0, "nws sunny");
+assert(nwsTextToWmo("Chance Showers And Thunderstorms") === 95, "nws thunder");
+assert(nwsTextToWmo("Rain Showers") === 80, "nws showers");
+assert(parseNwsWindMph("10 to 15 mph") === 15, "nws wind range");
+assert(nwsCompassToDeg("W") === 270, "nws compass W");
+
+const nwsDaily = dailyFromNwsForecast(
+  [
+    {
+      startTime: "2026-08-29T14:00:00-04:00",
+      isDaytime: true,
+      temperature: 79,
+      windSpeed: "10 mph",
+      windDirection: "W",
+      shortForecast: "Mostly Sunny",
+    },
+    {
+      startTime: "2026-08-29T18:00:00-04:00",
+      isDaytime: false,
+      temperature: 62,
+      windSpeed: "5 mph",
+      windDirection: "SW",
+      shortForecast: "Mostly Clear",
+    },
+    {
+      startTime: "2026-08-30T06:00:00-04:00",
+      isDaytime: true,
+      temperature: 77,
+      windSpeed: "8 to 12 mph",
+      windDirection: "S",
+      shortForecast: "Partly Cloudy",
+    },
+  ],
+  "America/Detroit"
+);
+assert(nwsDaily.time.join(",") === "2026-08-29,2026-08-30", "nws daily keys");
+assert(nwsDaily.temperature_2m_max[0] === 79 && nwsDaily.temperature_2m_min[0] === 62, "nws sat high/low");
+assert(nwsDaily.wx_label[0] === "Mostly Sunny", "nws short forecast label");
+assert(nwsDaily.wind_speed_10m_max[1] === 12, "nws sunday wind max");
+
+const nightOnly = dailyFromNwsForecast(
+  [
+    {
+      startTime: "2026-08-29T18:00:00-04:00",
+      isDaytime: false,
+      temperature: 61,
+      windSpeed: "5 mph",
+      windDirection: "W",
+      shortForecast: "Mostly Clear",
+    },
+  ],
+  "America/Detroit"
+);
+applyHourlyExtrema(
+  nightOnly,
+  [
+    { startTime: "2026-08-29T08:00:00-04:00", temperature: 63 },
+    { startTime: "2026-08-29T15:00:00-04:00", temperature: 80 },
+  ],
+  "America/Detroit"
+);
+assert(nightOnly.temperature_2m_max[0] === 80 && nightOnly.temperature_2m_min[0] === 61, "hourly fills missing high");
+
+const hourlyNow = pickHourlyCurrent(
+  [
+    { startTime: "2026-08-29T13:00:00-04:00", temperature: 77, shortForecast: "Sunny", windSpeed: "8 mph", windDirection: "W" },
+    { startTime: "2026-08-29T14:00:00-04:00", temperature: 79, shortForecast: "Sunny", windSpeed: "9 mph", windDirection: "W" },
+    { startTime: "2026-08-29T15:00:00-04:00", temperature: 78, shortForecast: "Sunny", windSpeed: "9 mph", windDirection: "W" },
+  ],
+  new Date("2026-08-29T18:10:00Z")
+);
+assert(hourlyNow.temperature === 79, "pick hourly current nearest past hour");
+const nwsCurrent = currentFromNwsPeriod(hourlyNow);
+assert(nwsCurrent.temperature_2m === 79 && nwsCurrent.weather_code === 0, "nws current maps to open-meteo shape");
+
+const mergedWx = mergeWeatherPayloads(
+  {
+    source: "National Weather Service · Holland, MI",
+    current: { temperature_2m: 78 },
+    daily: {
+      time: ["2026-08-29"],
+      temperature_2m_max: [80],
+      temperature_2m_min: [69],
+      weather_code: [80],
+      wx_label: ["Chance Rain Showers"],
+      wind_speed_10m_max: [12],
+      wind_direction_10m_dominant: [225],
+    },
+  },
+  {
+    source: "Open-Meteo",
+    current: { temperature_2m: 78.3 },
+    daily: {
+      time: ["2026-08-27", "2026-08-29"],
+      temperature_2m_max: [75, 79],
+      temperature_2m_min: [60, 62],
+      weather_code: [0, 3],
+      wx_label: ["", ""],
+      wind_speed_10m_max: [8, 10],
+      wind_direction_10m_dominant: [180, 220],
+    },
+  }
+);
+assert(mergedWx.source.startsWith("National Weather Service"), "merge keeps NWS source");
+assert(mergedWx.daily.time.join(",") === "2026-08-27,2026-08-29", "merge unions dates");
+assert(mergedWx.daily.temperature_2m_max[0] === 75, "merge fills past day from Open-Meteo");
+assert(mergedWx.daily.temperature_2m_max[1] === 80, "merge keeps NWS today high");
 
 const weatherOnlyDays = buildDays(
   {
@@ -151,6 +291,35 @@ assert(weatherOnlyDays[0].isCurrent === true, "today flagged");
 assert(weatherOnlyDays[0].observations?.tempF === 70, "observations on current");
 assert(weatherOnlyDays[1].observations === null, "observations null on other days");
 assert(weatherOnlyDays[0].waves.now === null && weatherOnlyDays[0].waves.max === null, "waves optional");
+
+const nwsDays = buildDays(
+  {
+    source: "National Weather Service · Holland, MI",
+    current: {
+      temperature_2m: 63,
+      weather_code: 2,
+      wind_speed_10m: 10,
+      wind_direction_10m: 270,
+      wx_label: "Mostly Sunny",
+    },
+    daily: {
+      time: ["2026-08-29"],
+      weather_code: [2],
+      temperature_2m_max: [80],
+      temperature_2m_min: [62],
+      wind_speed_10m_max: [10],
+      wind_direction_10m_dominant: [270],
+      wx_label: ["Mostly Sunny"],
+    },
+  },
+  null,
+  { now: new Date("2026-08-29T16:00:00Z"), timeZone: "America/Detroit", windowKeys: ["2026-08-29"] }
+);
+assert(nwsDays[0].forecast.highF === 80, "nws high");
+assert(nwsDays[0].forecast.wxLabel === "Mostly Sunny", "nws forecast label");
+assert(nwsDays[0].observations.wxLabel === "Mostly Sunny", "nws current label");
+assert(nwsDays[0].observations.tempF === 63, "nws current still stored");
+assert(tempHeadline(nwsDays[0]) === "80°", "headline is Holland daily high, not morning current");
 
 assert(eachDayKey("2026-08-22", "2026-08-24").join(",") === "2026-08-22,2026-08-23,2026-08-24", "eachDayKey inclusive");
 assert(eachDayKey("2026-08-24", "2026-08-22").length === 0, "eachDayKey reversed empty");
@@ -261,5 +430,13 @@ await runProviderChain(
   { log: () => {} }
 );
 assert(secondCalled, "provider throw continues chain");
+
+let emptyError = "";
+try {
+  await runProviderChain([{ fetch: async () => null }], { log: () => {}, emptyError: "No weather forecast was available for this location." });
+} catch (error) {
+  emptyError = error.message;
+}
+assert(emptyError === "No weather forecast was available for this location.", "chain emptyError");
 
 console.log("holland2 smoke: all assertions passed");
