@@ -61,3 +61,23 @@ Not applicable. No blocking list. Agent 1 does not need to update for approval.
 - Addendum notes: `wavePayload?.` optional-chain, axis stays locked, root `touch-action: manipulation`, empty nickname → `"Anonymous"`, `forecastDays` unused (no slice).
 
 `holland/` was not modified. No code was changed for this review except this file.
+
+## Nit re-check (Agent 2)
+
+**Verdict:** Approve
+
+Re-checked only the eleven requested fixes on `cursor/holland2-rebuild-04b5` (commit `16cceef`). `git diff holland/` is empty. No `holland/` imports in holland2 JS. `node holland2/smoke.mjs` passed.
+
+1. **PASS** — `_handleFile` awaits `file.arrayBuffer()` after `ERRORS.photoReading` and before `ERRORS.photoShrinking`.
+2. **PASS** — single `lib/timeout.js` `withTimeout`; PhotoStrip and image-pipeline import it; no local copies.
+3. **PASS** — `looksLikeImage` exported from `media/image-pipeline.js` and imported by PhotoStrip.
+4. **PASS** — `mountCarousel` removed from ConditionsCard; SiteController no longer calls it.
+5. **PASS** — `setTiles` runs, then `_setPhase("ready")`.
+6. **PASS** — `_connectFeeds` wraps `connectFirebase` in try/catch and maps a throw to feed/list `error` (not stuck on “Loading notes…”).
+7. **PASS** — dead `if (!this._coordinator)` branch gone from `DayCarousel.setTiles`; it only `bind()`s.
+8. **PASS** — honeypot input has `id`; label uses matching `for`; `el()` `setAttribute`s it.
+9. **PASS** — `file-too-large` is checked before generic `too-large` in `mapPhotoError`.
+10. **PASS** — `waveProviders(config)` in `data/waves.js`; SiteController calls `runProviderChain(waveProviders(CONFIG))`.
+11. **PASS** — smoke asserts UTC-midnight `formatDayLabel` trap and `mapPhotoError({ message: "file-too-large" })`.
+
+No remaining nit list. Agent 1 does not need to change anything else.
