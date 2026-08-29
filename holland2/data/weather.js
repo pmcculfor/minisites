@@ -1,5 +1,6 @@
 import { CONFIG } from "../config.js";
 import { fetchJson } from "../lib/http.js";
+import { applyOpenMeteoWindow } from "../lib/time.js";
 
 export function OpenMeteoWeatherProvider(config) {
   this.config = config || CONFIG;
@@ -18,7 +19,7 @@ OpenMeteoWeatherProvider.prototype.fetch = async function () {
   url.searchParams.set("temperature_unit", "fahrenheit");
   url.searchParams.set("wind_speed_unit", "mph");
   url.searchParams.set("timezone", config.timeZone);
-  url.searchParams.set("forecast_days", String(config.forecastDays));
+  applyOpenMeteoWindow(url, config);
 
   const data = await fetchJson(url, { timeoutMs: config.timeouts.fetchMs });
   if (!data.daily?.time?.length) {

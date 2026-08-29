@@ -9,6 +9,62 @@ export function detroitDayKey(date, timeZone) {
   }).format(date || new Date());
 }
 
+const DAY_KEY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+export function isDayKey(value) {
+  return typeof value === "string" && DAY_KEY_RE.test(value);
+}
+
+function utcFromDayKey(dayKey) {
+  const match = DAY_KEY_RE.exec(dayKey);
+  if (!match) return null;
+  return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+}
+
+export function eachDayKey(startKey, endKey) {
+  const start = utcFromDayKey(startKey);
+  const end = utcFromDayKey(endKey);
+  if (start == null || end == null || start > end) return [];
+  const keys = [];
+  for (let t = start; t <= end; t += 86400000) {
+    const d = new Date(t);
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(d.getUTCDate()).padStart(2, "0");
+    keys.push(`${y}-${m}-${day}`);
+  }
+  return keys;
+}
+
+export function pastDaysCount(firstOpenDay, todayKey, max) {
+  const start = utcFromDayKey(firstOpenDay);
+  const today = utcFromDayKey(todayKey);
+  if (start == null || today == null) return 0;
+  const days = Math.round((today - start) / 86400000);
+  const cap = max == null ? 92 : max;
+  return Math.max(0, Math.min(cap, days));
+}
+
+export function forecastWindow(config, now) {
+  const cfg = config || CONFIG;
+  const todayKey = detroitDayKey(now, cfg.timeZone);
+  return {
+    todayKey,
+    pastDays: pastDaysCount(cfg.firstOpenDay, todayKey, 92),
+    forecastDays: cfg.forecastDays,
+    windowKeys: eachDayKey(cfg.firstOpenDay, cfg.lastOpenDay),
+  };
+}
+
+export function applyOpenMeteoWindow(url, config, now) {
+  const window = forecastWindow(config, now);
+  url.searchParams.set("forecast_days", String(window.forecastDays));
+  if (window.pastDays > 0) {
+    url.searchParams.set("past_days", String(window.pastDays));
+  }
+  return window;
+}
+
 export function isAfterLastOpenDay(date, lastOpenDay, timeZone) {
   return detroitDayKey(date, timeZone) > lastOpenDay;
 }

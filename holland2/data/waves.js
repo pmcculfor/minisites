@@ -1,6 +1,6 @@
 import { CONFIG } from "../config.js";
 import { fetchJson } from "../lib/http.js";
-import { detroitDayKey, durationToMs } from "../lib/time.js";
+import { applyOpenMeteoWindow, detroitDayKey, durationToMs } from "../lib/time.js";
 import { waveObservation } from "../domain/models.js";
 
 export function isUsableWave(height, period) {
@@ -79,7 +79,7 @@ OpenMeteoMarineProvider.prototype.fetch = async function () {
   url.searchParams.set("daily", "wave_height_max,wave_direction_dominant,wave_period_max");
   url.searchParams.set("timezone", config.timeZone);
   url.searchParams.set("models", model);
-  url.searchParams.set("forecast_days", String(config.forecastDays));
+  applyOpenMeteoWindow(url, config);
 
   const data = await fetchJson(url, { timeoutMs: config.timeouts.fetchMs });
   const dailyByDate = dailyMapFromOpenMeteo(data.daily, source);

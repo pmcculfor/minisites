@@ -8,6 +8,8 @@ This is a rebuild of `holland/` with the same product, copy, visual language, an
 
 Open through **the end of September 3, 2026, America/Detroit**. After that the page shows a closed message and Firestore rejects new comments.
 
+The carousel covers the trip window in `config.js` (`firstOpenDay` through `lastOpenDay`), not only the next seven forecast days. Past days stay in the strip so notes and pictures remain reachable. The view starts on **today**; swipe left for earlier days.
+
 Weather and waves are fetched **once on page load** (no polling). A loading indicator shows until those requests finish.
 
 Pinch-zoom is locked on purpose (`maximum-scale=1` plus `touch-action: manipulation` on `html, body`) so the day carousel can own horizontal swipes. That is an intentional product constraint, not an oversight.
@@ -72,7 +74,7 @@ Serve this folder as static files (any local server). ES modules require HTTP, n
 
 - **Weather:** Open-Meteo for Holland city (`42.7875, -86.1089`), °F and mph, Eastern Time.
 - **Waves:** Open-Meteo ECMWF WAM just offshore (`42.90, -86.50`). GFS Wave is a backup. If both miss, National Weather Service gridpoint data for the Holland buoy area is used. Labeled as a **forecast**.
-- **Comments:** each day’s tile has its own notes. Optional name, 500-character text, honeypot. Stored with that day’s `dayKey`. Rendered as text only (no HTML).
+- **Comments:** each day’s tile has its own notes, including days already past in the trip window. Optional name, 500-character text, honeypot. Stored with that day’s `dayKey`. Rendered as text only (no HTML).
 - **Pictures:** upload button above a vertical list on that day. The browser shrinks the photo and saves it in the `photos` Firestore collection. Phone HEIC/JPEG files are accepted. Uploads time out with an error instead of spinning forever. Photos stack full width; the **page** is the vertical scroller (no inner photo list scrollbar).
 
 Query `?previewClosed=1` to see the post–September 3 closed screen without waiting.
@@ -84,6 +86,7 @@ Client close date and Firestore rules are **one policy expressed twice**. They c
 | Policy | Client | Server (console-published) |
 |---|---|---|
 | Close instant | `CONFIG.lastOpenDay` (`2026-09-03`) + Detroit day key in `config.js` / `lib/time.js` | `firestore.rules` `stillOpen()`: `request.time < timestamp.date(2026, 9, 4) + duration.value(4, 'h')` (end of 2026-09-03 EDT = 2026-09-04 04:00 UTC) |
+| Trip window | `CONFIG.firstOpenDay` (`2026-08-22`) through `lastOpenDay`; Open-Meteo `past_days` is derived | n/a (reads still work; writes stop at close) |
 | Comment lengths | `CONFIG.limits` + Guestbook sanitize | `validComment()` |
 | Photo URL size | image pipeline on write; `isSafeImageSrc` on **display** | `validPhoto()` |
 

@@ -1,5 +1,5 @@
 import { CONFIG } from "../config.js";
-import { resolveClosed, formatClock } from "../lib/time.js";
+import { forecastWindow, formatClock, resolveClosed } from "../lib/time.js";
 import { groupBy } from "../lib/group.js";
 import { createRateLimiters } from "../lib/rate-limit.js";
 import { buildDays } from "../domain/day-builder.js";
@@ -74,6 +74,9 @@ export class SiteController {
   async _load() {
     const weatherProvider = new OpenMeteoWeatherProvider(CONFIG);
 
+    const now = new Date();
+    const { windowKeys, todayKey } = forecastWindow(CONFIG, now);
+
     const [weatherResult, wavesResult] = await Promise.allSettled([
       weatherProvider.fetch(),
       runProviderChain(waveProviders(CONFIG)),
@@ -83,15 +86,10 @@ export class SiteController {
     if (weatherResult.status === "rejected") console.error(weatherResult.reason);
     if (wavesResult.status === "rejected") console.error(wavesResult.reason);
 
-    if (!weather && !waves) {
-      this._setPhase("error", { message: ERRORS.weatherBothFailed });
-      return;
-    }
-
     const days = buildDays(weather, waves, {
-      now: new Date(),
+      now,
       timeZone: CONFIG.timeZone,
-      forecastDays: CONFIG.forecastDays,
+      windowKeys,
     });
     if (!days.length) {
       this._setPhase("error", { message: ERRORS.weatherBothFailed });
@@ -115,6 +113,9 @@ export class SiteController {
     });
     this._carousel.setTiles(this._tiles);
     this._setPhase("ready", { asOf: this._asOfLine(weather, waves) });
+    const align = () => this._carousel.scrollToDayKey(todayKey, { behavior: "auto" });
+    align();
+    if (typeof requestAnimationFrame === "function") requestAnimationFrame(align);
     await this._connectFeeds();
   }
 

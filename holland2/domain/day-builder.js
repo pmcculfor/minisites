@@ -2,24 +2,37 @@ import { CONFIG } from "../config.js";
 import { detroitDayKey } from "../lib/time.js";
 import { conditions, day } from "./models.js";
 
+function forecastByDay(daily) {
+  const map = {};
+  if (!daily?.time) return map;
+  daily.time.forEach((dayKey, i) => {
+    map[dayKey] = conditions({
+      weatherCode: daily.weather_code?.[i],
+      highF: daily.temperature_2m_max?.[i],
+      lowF: daily.temperature_2m_min?.[i],
+      windMph: daily.wind_speed_10m_max?.[i],
+      windDirDeg: daily.wind_direction_10m_dominant?.[i],
+    });
+  });
+  return map;
+}
+
 export function buildDays(weatherPayload, wavePayload, opts) {
   const options = opts || {};
   const now = options.now || new Date();
   const timeZone = options.timeZone || CONFIG.timeZone;
-  const dates =
-    weatherPayload?.daily?.time?.slice() ||
-    Object.keys(wavePayload?.dailyByDate || {}).sort();
+  const weatherMap = forecastByDay(weatherPayload?.daily);
+  const dates = [
+    ...new Set([
+      ...(options.windowKeys || []),
+      ...(weatherPayload?.daily?.time || []),
+      ...Object.keys(wavePayload?.dailyByDate || {}),
+    ]),
+  ].sort();
 
-  return dates.map((dayKey, i) => {
+  return dates.map((dayKey) => {
     const isCurrent = dayKey === detroitDayKey(now, timeZone);
-    const daily = weatherPayload?.daily;
-    const forecast = conditions({
-      weatherCode: daily?.weather_code?.[i],
-      highF: daily?.temperature_2m_max?.[i],
-      lowF: daily?.temperature_2m_min?.[i],
-      windMph: daily?.wind_speed_10m_max?.[i],
-      windDirDeg: daily?.wind_direction_10m_dominant?.[i],
-    });
+    const forecast = weatherMap[dayKey] || conditions();
 
     const current = weatherPayload?.current;
     const observations =
