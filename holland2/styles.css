@@ -175,12 +175,10 @@ h1 {
 }
 
 .forecast-scroller {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: calc(
-    (100% - (var(--visible-tiles) - 1) * var(--tile-gap)) / var(--visible-tiles)
-  );
-  align-items: start;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-start;
   gap: var(--tile-gap);
   min-width: 0;
   width: 100%;
@@ -193,6 +191,8 @@ h1 {
   scrollbar-width: none;
   touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
+  background: var(--sand);
+  border-radius: 12px;
 }
 
 .forecast-scroller::-webkit-scrollbar {
@@ -207,7 +207,12 @@ h1 {
 .forecast-tile {
   display: flex;
   flex-direction: column;
-  align-self: start;
+  flex: 0 0 calc(
+    (100% - (var(--visible-tiles) - 1) * var(--tile-gap)) / var(--visible-tiles)
+  );
+  width: calc(
+    (100% - (var(--visible-tiles) - 1) * var(--tile-gap)) / var(--visible-tiles)
+  );
   scroll-snap-align: start;
   scroll-snap-stop: always;
   border-radius: 16px;
@@ -216,7 +221,7 @@ h1 {
   border: 1px solid rgba(28, 42, 48, 0.08);
   min-width: 0;
   max-width: 100%;
-  height: max-content;
+  height: auto;
   cursor: grab;
   touch-action: pan-x pan-y;
   user-select: none;
