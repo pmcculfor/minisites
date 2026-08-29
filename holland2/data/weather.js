@@ -253,9 +253,10 @@ function hasHighOrLow(row) {
   return row && (row.temperature_2m_max != null || row.temperature_2m_min != null);
 }
 
-export function mergeWeatherPayloads(primary, fallback) {
+export function mergeWeatherPayloads(primary, fallback, opts) {
   if (!primary) return fallback || null;
   if (!fallback) return primary;
+  const todayKey = opts && opts.todayKey;
   const preferred = dailyRowMap(primary.daily);
   const extra = dailyRowMap(fallback.daily);
   const keys = [...new Set([...Object.keys(preferred), ...Object.keys(extra)])].sort();
@@ -269,7 +270,11 @@ export function mergeWeatherPayloads(primary, fallback) {
     wind_direction_10m_dominant: [],
   };
   for (const key of keys) {
-    const row = hasHighOrLow(preferred[key]) ? preferred[key] : extra[key] || preferred[key];
+    const official = preferred[key];
+    const model = extra[key];
+    let row = null;
+    if (hasHighOrLow(official)) row = official;
+    else if (hasHighOrLow(model) && (!todayKey || key < todayKey)) row = model;
     if (!row) continue;
     daily.time.push(key);
     daily.temperature_2m_max.push(row.temperature_2m_max);
@@ -289,8 +294,10 @@ export function mergeWeatherPayloads(primary, fallback) {
 
 export async function fetchCityWeather(config, opts) {
   const options = opts || {};
+  const cfg = config || CONFIG;
+  const todayKey = options.todayKey || detroitDayKey(options.now, cfg.timeZone);
   const results = [];
-  for (const provider of weatherProviders(config)) {
+  for (const provider of weatherProviders(cfg)) {
     try {
       const result = await provider.fetch();
       if (isUsableProviderResult(result)) results.push(result);
@@ -302,5 +309,5 @@ export async function fetchCityWeather(config, opts) {
   if (!results.length) {
     throw new Error(options.emptyError || "No weather forecast was available for this location.");
   }
-  return results.slice(1).reduce((merged, next) => mergeWeatherPayloads(merged, next), results[0]);
+  return results.slice(1).reduce((merged, next) => mergeWeatherPayloads(merged, next, { todayKey }), results[0]);
 }

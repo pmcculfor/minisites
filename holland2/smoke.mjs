@@ -242,6 +242,41 @@ const mergedWx = mergeWeatherPayloads(
     source: "National Weather Service · Holland, MI",
     current: { temperature_2m: 78 },
     daily: {
+      time: ["2026-08-29", "2026-09-02"],
+      temperature_2m_max: [80, 86],
+      temperature_2m_min: [69, 69],
+      weather_code: [80, 2],
+      wx_label: ["Chance Rain Showers", "Partly Sunny"],
+      wind_speed_10m_max: [12, 10],
+      wind_direction_10m_dominant: [225, 225],
+    },
+  },
+  {
+    source: "Open-Meteo",
+    current: { temperature_2m: 78.3 },
+    daily: {
+      time: ["2026-08-27", "2026-08-29", "2026-09-02"],
+      temperature_2m_max: [75, 79, 94.5],
+      temperature_2m_min: [60, 62, 73.6],
+      weather_code: [0, 3, 3],
+      wx_label: ["", "", ""],
+      wind_speed_10m_max: [8, 10, 17],
+      wind_direction_10m_dominant: [180, 220, 225],
+    },
+  },
+  { todayKey: "2026-08-29" }
+);
+assert(mergedWx.source.startsWith("National Weather Service"), "merge keeps NWS source");
+assert(mergedWx.daily.time.join(",") === "2026-08-27,2026-08-29,2026-09-02", "merge unions past + official days");
+assert(mergedWx.daily.temperature_2m_max[0] === 75, "merge fills past day from Open-Meteo");
+assert(mergedWx.daily.temperature_2m_max[1] === 80, "merge keeps NWS today high");
+assert(mergedWx.daily.temperature_2m_max[2] === 86, "Sept 2 keeps NWS 86, not Open-Meteo 94.5");
+
+const omOnlyFuture = mergeWeatherPayloads(
+  {
+    source: "National Weather Service · Holland, MI",
+    current: { temperature_2m: 78 },
+    daily: {
       time: ["2026-08-29"],
       temperature_2m_max: [80],
       temperature_2m_min: [69],
@@ -255,20 +290,18 @@ const mergedWx = mergeWeatherPayloads(
     source: "Open-Meteo",
     current: { temperature_2m: 78.3 },
     daily: {
-      time: ["2026-08-27", "2026-08-29"],
-      temperature_2m_max: [75, 79],
-      temperature_2m_min: [60, 62],
-      weather_code: [0, 3],
-      wx_label: ["", ""],
-      wind_speed_10m_max: [8, 10],
-      wind_direction_10m_dominant: [180, 220],
+      time: ["2026-09-02"],
+      temperature_2m_max: [94.5],
+      temperature_2m_min: [73.6],
+      weather_code: [3],
+      wx_label: [""],
+      wind_speed_10m_max: [17],
+      wind_direction_10m_dominant: [225],
     },
-  }
+  },
+  { todayKey: "2026-08-29" }
 );
-assert(mergedWx.source.startsWith("National Weather Service"), "merge keeps NWS source");
-assert(mergedWx.daily.time.join(",") === "2026-08-27,2026-08-29", "merge unions dates");
-assert(mergedWx.daily.temperature_2m_max[0] === 75, "merge fills past day from Open-Meteo");
-assert(mergedWx.daily.temperature_2m_max[1] === 80, "merge keeps NWS today high");
+assert(!omOnlyFuture.daily.time.includes("2026-09-02"), "do not invent a 95° Sept 2 from Open-Meteo when NWS omitted that day");
 
 const weatherOnlyDays = buildDays(
   {
