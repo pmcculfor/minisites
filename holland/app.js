@@ -409,6 +409,53 @@ function initCarousel(scroller) {
   scroller.addEventListener("pointerup", endDrag);
   scroller.addEventListener("pointercancel", endDrag);
 
+  let touchAxis = null;
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchLastY = 0;
+  scroller.addEventListener(
+    "touchstart",
+    (event) => {
+      if (event.touches.length !== 1) return;
+      if (event.target.closest("input, textarea, button, a")) return;
+      const t = event.touches[0];
+      touchStartX = t.clientX;
+      touchStartY = t.clientY;
+      touchLastY = t.clientY;
+      touchAxis = null;
+    },
+    { passive: true }
+  );
+  scroller.addEventListener(
+    "touchmove",
+    (event) => {
+      if (event.touches.length !== 1 || touchAxis === "x") return;
+      if (event.target.closest("input, textarea")) return;
+      const t = event.touches[0];
+      const dx = t.clientX - touchStartX;
+      const dy = t.clientY - touchStartY;
+      if (touchAxis == null) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        touchAxis = Math.abs(dy) >= Math.abs(dx) ? "y" : "x";
+      }
+      if (touchAxis === "y") {
+        event.preventDefault();
+        window.scrollBy(0, touchLastY - t.clientY);
+        touchLastY = t.clientY;
+      }
+    },
+    { passive: false }
+  );
+  scroller.addEventListener(
+    "wheel",
+    (event) => {
+      if (Math.abs(event.deltaY) < Math.abs(event.deltaX) || event.deltaY === 0) return;
+      event.preventDefault();
+      window.scrollBy(0, event.deltaY);
+    },
+    { passive: false }
+  );
+
   sync();
   window.addEventListener("resize", sync);
 }
