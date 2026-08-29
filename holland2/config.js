@@ -4,13 +4,19 @@ export const CONFIG = {
   lastOpenDay: "2026-09-03", // inclusive; closed when detroitDayKey() > this
   previewClosedParam: "previewClosed",
   forecastDays: 7,
-  city: { lat: 42.7875, lon: -86.1089 },
+  city: { lat: 42.7875, lon: -86.1089, name: "Holland, MI" },
   wavePoint: { lat: 42.9, lon: -86.5 },
   nwsPoint: { lat: 42.9, lon: -86.27 },
   openMeteoForecast: "https://api.open-meteo.com/v1/forecast",
   openMeteoMarine: "https://marine-api.open-meteo.com/v1/marine",
   nwsPoints: function (lat, lon) {
     return "https://api.weather.gov/points/" + lat + "," + lon;
+  },
+  nwsHeaders: function () {
+    return {
+      Accept: "application/geo+json",
+      "User-Agent": "holland2 (https://pmcculfor.github.io/minisites/holland2/; Holland MI weather)",
+    };
   },
   collections: { comments: "comments", photos: "photos" },
   limits: {

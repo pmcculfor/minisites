@@ -86,7 +86,8 @@ export class DayTile {
       );
     }
 
-    skyChildren.push(el("p", { class: "tile-wx", text: skin.label }));
+    const wxLabel = dayModel.observations?.wxLabel || dayModel.forecast?.wxLabel || skin.label;
+    skyChildren.push(el("p", { class: "tile-wx", text: wxLabel }));
     skyChildren.push(el("p", { class: "tile-waves", text: waveHeadline(dayModel) }));
 
     const wind = windHeadline(dayModel);

@@ -12,6 +12,7 @@ function forecastByDay(daily) {
       lowF: daily.temperature_2m_min?.[i],
       windMph: daily.wind_speed_10m_max?.[i],
       windDirDeg: daily.wind_direction_10m_dominant?.[i],
+      wxLabel: daily.wx_label?.[i] || null,
     });
   });
   return map;
@@ -42,6 +43,7 @@ export function buildDays(weatherPayload, wavePayload, opts) {
             tempF: current.temperature_2m,
             windMph: current.wind_speed_10m,
             windDirDeg: current.wind_direction_10m,
+            wxLabel: current.wx_label || null,
           })
         : null;
 
