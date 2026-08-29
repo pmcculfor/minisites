@@ -526,7 +526,8 @@ textarea {
 }
 
 .comment-feed {
-  max-height: 11rem;
+  max-height: 48rem;
+  min-height: 18rem;
   overflow-y: auto;
   padding-right: 0.2rem;
 }

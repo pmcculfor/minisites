@@ -25,7 +25,13 @@ service cloud.firestore {
         && request.resource.data.dayKey.size() == 10
         && request.resource.data.url is string
         && request.resource.data.url.size() > 12
-        && request.resource.data.url.size() < 2000
+        && request.resource.data.url.size() < 900000
+        && (
+          (request.resource.data.url.size() >= 23
+            && request.resource.data.url[0:23] == 'data:image/jpeg;base64,')
+          || (request.resource.data.url.size() >= 8
+            && request.resource.data.url[0:8] == 'https://')
+        )
         && request.resource.data.path is string
         && request.resource.data.path.size() < 400
         && request.resource.data.createdAt is timestamp
