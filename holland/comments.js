@@ -57,8 +57,7 @@ function renderFeed(feed, docs) {
 
 export function createDayGuestbook(dayKey) {
   const wrap = node("div", "tile-guestbook");
-  wrap.append(node("h3", "guestbook-title", "Notes for this day"));
-  wrap.append(node("p", "comments-intro", "Anyone can leave a public note about this day. No account."));
+  wrap.append(node("h3", "guestbook-title", "Leaving note about this day"));
 
   const feed = node("div", "comment-feed");
   feed.dataset.commentFeed = dayKey;
@@ -112,10 +111,6 @@ export function createDayGuestbook(dayKey) {
   wrap.append(form);
 
   const photos = node("div", "photo-block");
-  photos.append(node("h3", "guestbook-title", "Pictures"));
-  photos.append(
-    node("p", "comments-intro", "Add a photo of this day. Phone pictures are shrunk before saving, so it should finish in a few seconds.")
-  );
 
   const uploadBtn = document.createElement("button");
   uploadBtn.type = "button";
