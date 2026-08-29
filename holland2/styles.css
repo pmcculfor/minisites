@@ -180,6 +180,7 @@ h1 {
   grid-auto-columns: calc(
     (100% - (var(--visible-tiles) - 1) * var(--tile-gap)) / var(--visible-tiles)
   );
+  align-items: start;
   gap: var(--tile-gap);
   min-width: 0;
   width: 100%;
@@ -206,6 +207,7 @@ h1 {
 .forecast-tile {
   display: flex;
   flex-direction: column;
+  align-self: start;
   scroll-snap-align: start;
   scroll-snap-stop: always;
   border-radius: 16px;
@@ -214,7 +216,13 @@ h1 {
   border: 1px solid rgba(28, 42, 48, 0.08);
   min-width: 0;
   max-width: 100%;
-  min-height: 100%;
+  height: max-content;
+  cursor: grab;
+  touch-action: pan-x pan-y;
+}
+
+.forecast-tile:active {
+  cursor: grabbing;
 }
 
 .forecast-tile.is-today {
@@ -227,12 +235,6 @@ h1 {
   overflow: hidden;
   padding: 1.15rem 1.15rem 2.6rem;
   color: var(--ink);
-  cursor: grab;
-  touch-action: pan-x pan-y;
-}
-
-.tile-sky:active {
-  cursor: grabbing;
 }
 
 .tile-sky > *:not(.tile-sky-fade) {
@@ -451,7 +453,6 @@ h1 {
 .tile-guestbook {
   padding: 0 1.15rem 1.2rem;
   background: var(--paper);
-  touch-action: pan-y;
 }
 
 .guestbook-title {
@@ -482,6 +483,10 @@ label {
 .optional {
   font-weight: 400;
   color: var(--muted);
+}
+
+.forecast-tile :is(input, textarea, label) {
+  cursor: auto;
 }
 
 input,
@@ -581,7 +586,6 @@ textarea {
   margin-top: 1.1rem;
   padding-top: 0.95rem;
   border-top: 1px dashed #d7cbb6;
-  touch-action: pan-y;
 }
 
 .photo-list {
@@ -638,11 +642,27 @@ textarea {
   }
 
   .forecast-wrap {
-    grid-template-columns: 1fr;
+    display: block;
   }
 
   .forecast-nav {
-    display: none;
+    position: fixed;
+    top: 50%;
+    z-index: 5;
+    margin: 0;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 999px;
+    box-shadow: var(--shadow);
+    transform: translateY(-50%);
+  }
+
+  #forecast-prev {
+    left: max(0.4rem, env(safe-area-inset-left));
+  }
+
+  #forecast-next {
+    right: max(0.4rem, env(safe-area-inset-right));
   }
 }
 
