@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function stillOpen() {
+      // End of 2026-09-03 America/Detroit (EDT) = 2026-09-04 04:00 UTC.
+      return request.time < timestamp.date(2026, 9, 4) + duration.value(4, 'h');
+    }
+
+    function validComment() {
+      return request.resource.data.keys().hasOnly(['nickname', 'text', 'createdAt', 'dayKey'])
+        && request.resource.data.nickname is string
+        && request.resource.data.nickname.size() <= 40
+        && request.resource.data.text is string
+        && request.resource.data.text.size() >= 1
+        && request.resource.data.text.size() <= 500
+        && request.resource.data.dayKey is string
+        && request.resource.data.dayKey.size() == 10
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.createdAt == request.time;
+    }
+
+    function validPhoto() {
+      return request.resource.data.keys().hasOnly(['dayKey', 'url', 'path', 'createdAt'])
+        && request.resource.data.dayKey is string
+        && request.resource.data.dayKey.size() == 10
+        && request.resource.data.url is string
+        && request.resource.data.url.size() > 12
+        && request.resource.data.url.size() < 900000
+        && (
+          (request.resource.data.url.size() >= 23
+            && request.resource.data.url[0:23] == 'data:image/jpeg;base64,')
+          || (request.resource.data.url.size() >= 8
+            && request.resource.data.url[0:8] == 'https://')
+        )
+        && request.resource.data.path is string
+        && request.resource.data.path.size() < 400
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.createdAt == request.time;
+    }
+
+    match /comments/{id} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && stillOpen()
+        && validComment();
+      allow update, delete: if false;
+    }
+
+    match /photos/{id} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && stillOpen()
+        && validPhoto();
+      allow update, delete: if false;
+    }
+  }
+}

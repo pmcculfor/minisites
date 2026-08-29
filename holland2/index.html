@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+    />
+    <title>McCulfor vacation — Holland, Michigan</title>
+    <meta
+      name="description"
+      content="McCulfor vacation in Holland, Michigan: weather, Lake Michigan waves, and notes and pictures for each day. Open through September 3, 2026."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Nunito+Sans:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="horizon" aria-hidden="true"></div>
+    <main class="page">
+      <header class="masthead">
+        <p class="kicker">Holland, Michigan · Lake Michigan · through September 3, 2026</p>
+        <h1>McCulfor vacation</h1>
+        <p class="lede">Weather in town, wave forecast just offshore, and notes and pictures for each day of the trip.</p>
+      </header>
+
+      <section id="closed" class="card closed-card" hidden>
+        <h2>The McCulfor vacation site has closed</h2>
+        <p>
+          This Holland trip page ran through the end of September 3, 2026 (Eastern Time).
+          Notes and pictures are no longer being accepted.
+        </p>
+      </section>
+
+      <div id="live">
+        <article
+          id="conditions"
+          class="card conditions-card"
+          aria-busy="true"
+          aria-live="polite"
+        >
+          <h2 class="card-title">Forecast</h2>
+
+          <div id="conditions-loading" class="loading">
+            <span class="spinner" aria-hidden="true"></span>
+            <p>Loading Holland conditions…</p>
+          </div>
+
+          <p id="conditions-error" class="error" hidden></p>
+
+          <div id="conditions-data" hidden>
+            <div class="forecast-wrap">
+              <button type="button" class="forecast-nav" id="forecast-prev" aria-label="Earlier days">
+                ‹
+              </button>
+              <div
+                class="forecast-scroller"
+                id="forecast-scroller"
+                tabindex="0"
+                role="region"
+                aria-label="Daily weather, waves, notes, and pictures. Swipe or use arrow keys."
+              ></div>
+              <button type="button" class="forecast-nav" id="forecast-next" aria-label="Later days">
+                ›
+              </button>
+            </div>
+            <p class="forecast-hint">Swipe between days. Wider screens show three or more tiles at once.</p>
+            <p id="as-of" class="meta-line as-of"></p>
+            <p class="forecast-note">
+              Wave height is a model forecast near the Holland buoy, not a live buoy reading.
+              Not for navigation or swim safety.
+            </p>
+          </div>
+        </article>
+      </div>
+
+      <footer class="site-footer">
+        <p>
+          Weather from
+          <a href="https://open-meteo.com/">Open-Meteo</a>
+          (CC BY 4.0). Waves from Open-Meteo ECMWF WAM, with National Weather Service
+          grid data if needed.
+        </p>
+        <p>Not a marine forecast product. Do not use this page for navigation or safety decisions.</p>
+      </footer>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
