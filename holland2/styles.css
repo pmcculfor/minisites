@@ -219,6 +219,7 @@ h1 {
   height: max-content;
   cursor: grab;
   touch-action: pan-x pan-y;
+  user-select: none;
 }
 
 .forecast-tile:active {
@@ -487,6 +488,7 @@ label {
 
 .forecast-tile :is(input, textarea, label) {
   cursor: auto;
+  user-select: text;
 }
 
 input,
