@@ -122,7 +122,8 @@ export class DayCarousel {
 
   _handlePointerDown(event) {
     if (event.pointerType === "touch") return;
-    if (!event.target.closest(".tile-sky")) return;
+    if (event.target.closest && event.target.closest(CONFIG.scroll.touchExemptSelector)) return;
+    if (!event.target.closest(".forecast-tile")) return;
     this._dragging = true;
     this._startX = event.clientX;
     this._startScroll = this._scroller.scrollLeft;

@@ -74,7 +74,7 @@ Serve this folder as static files (any local server). ES modules require HTTP, n
 
 - **Weather:** Open-Meteo for Holland city (`42.7875, -86.1089`), °F and mph, Eastern Time.
 - **Waves:** Open-Meteo ECMWF WAM just offshore (`42.90, -86.50`). GFS Wave is a backup. If both miss, National Weather Service gridpoint data for the Holland buoy area is used. Labeled as a **forecast**.
-- **Comments:** each day’s tile has its own notes, including days already past in the trip window. Optional name, 500-character text, honeypot. Stored with that day’s `dayKey`. Rendered as text only (no HTML).
+- **Comments:** each day’s tile has its own notes, including days already past in the trip window. Optional name, 500-character text, honeypot. Stored with that day’s `dayKey`. Rendered as text only (no HTML). Horizontal swipe between days works on the whole tile (forms stay native). On small screens, fixed left/right arrows stay on screen while the page scrolls.
 - **Pictures:** upload button above a vertical list on that day. The browser shrinks the photo and saves it in the `photos` Firestore collection. Phone HEIC/JPEG files are accepted. Uploads time out with an error instead of spinning forever. Photos stack full width; the **page** is the vertical scroller (no inner photo list scrollbar).
 
 Query `?previewClosed=1` to see the post–September 3 closed screen without waiting.
