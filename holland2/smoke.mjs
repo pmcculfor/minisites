@@ -1,4 +1,4 @@
-import { detroitDayKey, resolveClosed, formatDayLabel } from "./lib/time.js";
+import { detroitDayKey, resolveClosed, formatDayLabel, eachDayKey, pastDaysCount, forecastWindow } from "./lib/time.js";
 import { skinForCode } from "./domain/weather-skins.js";
 import { buildDays } from "./domain/day-builder.js";
 import { isUsableWave, runProviderChain } from "./data/waves.js";
@@ -151,6 +151,53 @@ assert(weatherOnlyDays[0].isCurrent === true, "today flagged");
 assert(weatherOnlyDays[0].observations?.tempF === 70, "observations on current");
 assert(weatherOnlyDays[1].observations === null, "observations null on other days");
 assert(weatherOnlyDays[0].waves.now === null && weatherOnlyDays[0].waves.max === null, "waves optional");
+
+assert(eachDayKey("2026-08-22", "2026-08-24").join(",") === "2026-08-22,2026-08-23,2026-08-24", "eachDayKey inclusive");
+assert(eachDayKey("2026-08-24", "2026-08-22").length === 0, "eachDayKey reversed empty");
+assert(pastDaysCount("2026-08-22", "2026-08-29") === 7, "pastDaysCount 7");
+assert(pastDaysCount("2026-08-29", "2026-08-29") === 0, "pastDaysCount today");
+assert(pastDaysCount("2026-09-01", "2026-08-29") === 0, "pastDaysCount future start");
+assert(pastDaysCount("2026-08-22", "2026-08-29", 3) === 3, "pastDaysCount cap");
+
+const ranged = buildDays(
+  {
+    source: "Open-Meteo",
+    current: { temperature_2m: 70, weather_code: 0, wind_speed_10m: 5, wind_direction_10m: 180 },
+    daily: {
+      time: ["2026-08-29", "2026-08-30"],
+      weather_code: [0, 3],
+      temperature_2m_max: [80, 77],
+      temperature_2m_min: [60, 58],
+      wind_speed_10m_max: [10, 12],
+      wind_direction_10m_dominant: [180, 90],
+    },
+  },
+  null,
+  {
+    now: new Date("2026-08-29T16:00:00Z"),
+    timeZone: "America/Detroit",
+    windowKeys: eachDayKey("2026-08-28", "2026-08-30"),
+  }
+);
+assert(ranged.map((d) => d.dayKey).join(",") === "2026-08-28,2026-08-29,2026-08-30", "window union dates");
+assert(ranged[0].forecast.highF == null, "past day without weather payload is empty forecast, not index-shifted");
+assert(ranged[1].forecast.highF === 80, "today forecast keyed by dayKey");
+assert(ranged[2].forecast.highF === 77, "next day forecast keyed by dayKey");
+assert(ranged[0].isCurrent === false && ranged[1].isCurrent === true, "current flag on today in window");
+
+const windowOnly = buildDays(null, null, {
+  now: new Date("2026-08-29T16:00:00Z"),
+  timeZone: "America/Detroit",
+  windowKeys: eachDayKey("2026-08-28", "2026-08-29"),
+});
+assert(windowOnly.length === 2, "trip window tiles exist without weather or waves");
+
+const fw = forecastWindow(
+  { firstOpenDay: "2026-08-27", lastOpenDay: "2026-09-03", forecastDays: 7, timeZone: "America/Detroit" },
+  new Date("2026-08-29T16:00:00Z")
+);
+assert(fw.pastDays === 2, "forecastWindow pastDays");
+assert(fw.windowKeys[0] === "2026-08-27" && fw.windowKeys.at(-1) === "2026-09-03", "forecastWindow keys");
 
 const waveOnly = buildDays(
   null,

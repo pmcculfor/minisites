@@ -53,6 +53,23 @@ export class DayCarousel {
     }
   }
 
+  scrollToDayKey(dayKey, opts) {
+    const tile = this._scroller.querySelector(`.forecast-tile[data-day="${dayKey}"]`);
+    if (!tile) {
+      this._syncNav();
+      return;
+    }
+    const scrollerBox = this._scroller.getBoundingClientRect();
+    const tileBox = tile.getBoundingClientRect();
+    const left = this._scroller.scrollLeft + (tileBox.left - scrollerBox.left);
+    const behavior = (opts && opts.behavior) || "auto";
+    this._scroller.scrollTo({ left, behavior });
+    this._syncNav();
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => this._syncNav());
+    }
+  }
+
   scrollByTiles(deltaIndex) {
     this._scroller.scrollBy({
       left: deltaIndex * this._tileStep(),
