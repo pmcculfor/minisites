@@ -1,6 +1,25 @@
 # holland2 plan review (Agent 2)
 
-## Verdict
+## Agreement on updated plan (Agent 2)
+
+**Verdict:** Agree
+
+**Blocking checklist:**
+
+1. **Scroll coordinator (§6 three designs)** — **PASS.** §6.3 is one contract: wheel + touch only, exported `classify()`, no `matchMedia` / iOS / pointermove, scroller stays `touch-action: pan-x pan-y`, DayCarousel owns mouse-drag and constructs/destroys the coordinator, SiteController does not bind it.
+2. **Store lifetime vs construction** — **PASS.** Tiles paint with `store: null`, SiteController is the only `connectFirebase` caller, `attachStore` then one comments snapshot and one photos snapshot; Guestbook/PhotoStrip do not import `firebase/client.js`; `connectFirebase` returns Firestore functions (store.js may import the same gstatic URL).
+3. **Auth-failed terminal feed state** — **PASS.** Sign-in failure is `{ ok: true, canWrite: false }`; snapshots still run; auth-failed is not a feed phase; writes use the original auth copy.
+4. **DayTile / sky copy / waveHeadline** — **PASS.** §5.12 plus §5.2 UTC-16 `formatDayLabel`, daily-first compass, max bit only if `waves.max`, Calm threshold, omitted wind/range lines, full WMO table in §5.6.
+5. **Wave chain try/catch** — **PASS.** `runProviderChain` isolates each `fetch()`; original throw message after the list; `isUsableWave` is the `app.js:85–91` predicate applied at parse time.
+6. **Per-tile rate limits** — **PASS.** `createRateLimiters` is page-wide; SiteController passes the same comment/photo cooldown objects into every Guestbook/PhotoStrip; stamp after successful write.
+
+**New issues (if any):** None that block implementation. Implementer notes only: (a) §5.7 steps 7–8 must optional-chain `wavePayload` (`waves?.` in the original) so weather-only READY does not throw; (b) while a touch axis is locked, do not re-open it on later moves — invariant 1 already says this; (c) §2 UX #1 still says `manipulation or pan-x pan-y` on the root — follow the §6.3/§9 map (`html, body` = `manipulation`); (d) empty nickname still renders as `"Anonymous"` as in original `renderFeed`; (e) `buildDays` `opts.forecastDays` is unused — do not slice.
+
+**If Agree:** Agent 1 may implement holland2/ from holland2-plan.md as the sole spec.
+
+---
+
+## Verdict (original review)
 
 **Request changes.**
 
