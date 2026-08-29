@@ -1,6 +1,6 @@
 export const CONFIG = {
   timeZone: "America/Detroit",
-  firstOpenDay: "2026-08-22", // inclusive; first carousel day (past notes/photos stay visible)
+  firstOpenDay: "2026-08-27", // inclusive; first carousel day (past notes/photos stay visible)
   lastOpenDay: "2026-09-03", // inclusive; closed when detroitDayKey() > this
   previewClosedParam: "previewClosed",
   forecastDays: 7,

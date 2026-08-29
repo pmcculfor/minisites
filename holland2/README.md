@@ -86,7 +86,7 @@ Client close date and Firestore rules are **one policy expressed twice**. They c
 | Policy | Client | Server (console-published) |
 |---|---|---|
 | Close instant | `CONFIG.lastOpenDay` (`2026-09-03`) + Detroit day key in `config.js` / `lib/time.js` | `firestore.rules` `stillOpen()`: `request.time < timestamp.date(2026, 9, 4) + duration.value(4, 'h')` (end of 2026-09-03 EDT = 2026-09-04 04:00 UTC) |
-| Trip window | `CONFIG.firstOpenDay` (`2026-08-22`) through `lastOpenDay`; Open-Meteo `past_days` is derived | n/a (reads still work; writes stop at close) |
+| Trip window | `CONFIG.firstOpenDay` (`2026-08-27`) through `lastOpenDay`; Open-Meteo `past_days` is derived | n/a (reads still work; writes stop at close) |
 | Comment lengths | `CONFIG.limits` + Guestbook sanitize | `validComment()` |
 | Photo URL size | image pipeline on write; `isSafeImageSrc` on **display** | `validPhoto()` |
 

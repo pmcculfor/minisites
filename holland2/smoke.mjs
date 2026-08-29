@@ -193,11 +193,11 @@ const windowOnly = buildDays(null, null, {
 assert(windowOnly.length === 2, "trip window tiles exist without weather or waves");
 
 const fw = forecastWindow(
-  { firstOpenDay: "2026-08-22", lastOpenDay: "2026-09-03", forecastDays: 7, timeZone: "America/Detroit" },
+  { firstOpenDay: "2026-08-27", lastOpenDay: "2026-09-03", forecastDays: 7, timeZone: "America/Detroit" },
   new Date("2026-08-29T16:00:00Z")
 );
-assert(fw.pastDays === 7, "forecastWindow pastDays");
-assert(fw.windowKeys[0] === "2026-08-22" && fw.windowKeys.at(-1) === "2026-09-03", "forecastWindow keys");
+assert(fw.pastDays === 2, "forecastWindow pastDays");
+assert(fw.windowKeys[0] === "2026-08-27" && fw.windowKeys.at(-1) === "2026-09-03", "forecastWindow keys");
 
 const waveOnly = buildDays(
   null,
