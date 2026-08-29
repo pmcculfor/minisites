@@ -130,10 +130,9 @@ export class SiteController {
       prevBtn: this._doc.getElementById("forecast-prev"),
       nextBtn: this._doc.getElementById("forecast-next"),
     });
-    this._carousel.setTiles(this._tiles);
     this._conditions.mountCarousel(this._doc.getElementById("forecast-scroller"));
-
     this._setPhase("ready", { asOf: this._asOfLine(weather, waves) });
+    this._carousel.setTiles(this._tiles);
     await this._connectFeeds();
   }
 

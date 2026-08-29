@@ -56,6 +56,9 @@ export class DayCarousel {
     }
     this._coordinator.bind();
     this._syncNav();
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => this._syncNav());
+    }
   }
 
   scrollByTiles(deltaIndex) {
