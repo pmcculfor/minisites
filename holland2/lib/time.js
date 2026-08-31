@@ -36,6 +36,14 @@ export function eachDayKey(startKey, endKey) {
   return keys;
 }
 
+export function clipToOpenDays(keys, firstOpenDay, lastOpenDay) {
+  return (keys || []).filter((key) => {
+    if (firstOpenDay && key < firstOpenDay) return false;
+    if (lastOpenDay && key > lastOpenDay) return false;
+    return true;
+  });
+}
+
 export function pastDaysCount(firstOpenDay, todayKey, max) {
   const start = utcFromDayKey(firstOpenDay);
   const today = utcFromDayKey(todayKey);
