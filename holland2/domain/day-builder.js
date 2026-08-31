@@ -1,5 +1,5 @@
 import { CONFIG } from "../config.js";
-import { detroitDayKey } from "../lib/time.js";
+import { clipToOpenDays, detroitDayKey } from "../lib/time.js";
 import { conditions, day } from "./models.js";
 
 function forecastByDay(daily) {
@@ -23,13 +23,19 @@ export function buildDays(weatherPayload, wavePayload, opts) {
   const now = options.now || new Date();
   const timeZone = options.timeZone || CONFIG.timeZone;
   const weatherMap = forecastByDay(weatherPayload?.daily);
-  const dates = [
-    ...new Set([
-      ...(options.windowKeys || []),
-      ...(weatherPayload?.daily?.time || []),
-      ...Object.keys(wavePayload?.dailyByDate || {}),
-    ]),
-  ].sort();
+  const firstOpenDay = options.firstOpenDay || CONFIG.firstOpenDay;
+  const lastOpenDay = options.lastOpenDay || CONFIG.lastOpenDay;
+  const dates = clipToOpenDays(
+    [
+      ...new Set([
+        ...(options.windowKeys || []),
+        ...(weatherPayload?.daily?.time || []),
+        ...Object.keys(wavePayload?.dailyByDate || {}),
+      ]),
+    ].sort(),
+    firstOpenDay,
+    lastOpenDay
+  );
 
   return dates.map((dayKey) => {
     const isCurrent = dayKey === detroitDayKey(now, timeZone);

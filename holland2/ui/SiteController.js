@@ -88,6 +88,8 @@ export class SiteController {
       now,
       timeZone: CONFIG.timeZone,
       windowKeys,
+      firstOpenDay: CONFIG.firstOpenDay,
+      lastOpenDay: CONFIG.lastOpenDay,
     });
     if (!days.length) {
       this._setPhase("error", { message: ERRORS.weatherBothFailed });

@@ -1,4 +1,4 @@
-import { detroitDayKey, resolveClosed, formatDayLabel, eachDayKey, pastDaysCount, forecastWindow } from "./lib/time.js";
+import { detroitDayKey, resolveClosed, formatDayLabel, eachDayKey, clipToOpenDays, pastDaysCount, forecastWindow } from "./lib/time.js";
 import { skinForCode } from "./domain/weather-skins.js";
 import { buildDays } from "./domain/day-builder.js";
 import { isUsableWave, runProviderChain } from "./data/waves.js";
@@ -401,6 +401,51 @@ const fw = forecastWindow(
 assert(fw.pastDays === 2, "forecastWindow pastDays");
 assert(fw.windowKeys[0] === "2026-08-27" && fw.windowKeys.at(-1) === "2026-09-03", "forecastWindow keys");
 
+assert(
+  clipToOpenDays(["2026-08-26", "2026-09-03", "2026-09-04"], "2026-08-27", "2026-09-03").join(",") ===
+    "2026-09-03",
+  "clipToOpenDays drops days outside the trip"
+);
+
+const pastLast = buildDays(
+  {
+    source: "National Weather Service · Holland, MI",
+    current: { temperature_2m: 70, weather_code: 0 },
+    daily: {
+      time: ["2026-09-02", "2026-09-03", "2026-09-04", "2026-09-05"],
+      weather_code: [2, 1, 0, 0],
+      temperature_2m_max: [86, 83, 83, 80],
+      temperature_2m_min: [69, 65, 65, 62],
+      wind_speed_10m_max: [10, 8, 8, 7],
+      wind_direction_10m_dominant: [225, 90, 90, 40],
+    },
+  },
+  {
+    source: "Open-Meteo ecmwf_wam025",
+    current: waveObservation({ heightM: 1 }),
+    dailyByDate: {
+      "2026-09-03": waveObservation({ heightM: 1 }),
+      "2026-09-04": waveObservation({ heightM: 2 }),
+    },
+  },
+  {
+    now: new Date("2026-08-31T16:00:00Z"),
+    timeZone: "America/Detroit",
+    windowKeys: eachDayKey("2026-08-27", "2026-09-03"),
+    firstOpenDay: "2026-08-27",
+    lastOpenDay: "2026-09-03",
+  }
+);
+assert(pastLast.at(-1).dayKey === "2026-09-03", `last card is Sept 3, got ${pastLast.at(-1).dayKey}`);
+assert(
+  pastLast.every((d) => d.dayKey <= "2026-09-03"),
+  "no cards after lastOpenDay even when weather and waves continue"
+);
+assert(
+  pastLast.map((d) => d.dayKey).join(",") === eachDayKey("2026-08-27", "2026-09-03").join(","),
+  "carousel is the vacation window only"
+);
+
 const waveOnly = buildDays(
   null,
   {
@@ -419,7 +464,8 @@ const waveOnly = buildDays(
   },
   { now: new Date("2026-08-29T16:00:00Z"), timeZone: "America/Detroit", forecastDays: 7 }
 );
-assert(waveOnly.length === 8, `wave-only dates are not sliced, got ${waveOnly.length}`);
+assert(waveOnly.length === 6, `wave-only clips to lastOpenDay, got ${waveOnly.length}`);
+assert(waveOnly.at(-1).dayKey === "2026-09-03", "wave-only last card is Sept 3");
 assert(waveOnly[0].waves.now?.heightM === 1, "waves.now only on current");
 assert(waveOnly[1].waves.now === null, "waves.now null on other days");
 

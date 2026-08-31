@@ -8,7 +8,7 @@ This is a rebuild of `holland/` with the same product, copy, visual language, an
 
 Open through **the end of September 3, 2026, America/Detroit**. After that the page shows a closed message and Firestore rejects new comments.
 
-The carousel covers the trip window in `config.js` (`firstOpenDay` through `lastOpenDay`), not only the next seven forecast days. Past days stay in the strip so notes and pictures remain reachable. The view starts on **today**; swipe left for earlier days.
+The carousel covers the trip window in `config.js` (`firstOpenDay` through `lastOpenDay`). **September 3, 2026 is the last card** — extra NWS or marine forecast days after that are fetched but not shown. Past days stay in the strip so notes and pictures remain reachable. The view starts on **today**; swipe left for earlier days.
 
 Weather and waves are fetched **once on page load** (no polling). A loading indicator shows until those requests finish.
 
@@ -86,7 +86,7 @@ Client close date and Firestore rules are **one policy expressed twice**. They c
 | Policy | Client | Server (console-published) |
 |---|---|---|
 | Close instant | `CONFIG.lastOpenDay` (`2026-09-03`) + Detroit day key in `config.js` / `lib/time.js` | `firestore.rules` `stillOpen()`: `request.time < timestamp.date(2026, 9, 4) + duration.value(4, 'h')` (end of 2026-09-03 EDT = 2026-09-04 04:00 UTC) |
-| Trip window | `CONFIG.firstOpenDay` (`2026-08-27`) through `lastOpenDay`; Open-Meteo `past_days` is derived | n/a (reads still work; writes stop at close) |
+| Trip window | `CONFIG.firstOpenDay` (`2026-08-27`) through `lastOpenDay` (`2026-09-03`); carousel cards are clipped to that range even if a forecast product returns later days; Open-Meteo `past_days` is derived | n/a (reads still work; writes stop at close) |
 | Comment lengths | `CONFIG.limits` + Guestbook sanitize | `validComment()` |
 | Photo URL size | image pipeline on write; `isSafeImageSrc` on **display** | `validPhoto()` |
 
