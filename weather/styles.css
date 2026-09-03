@@ -1,0 +1,392 @@
+:root {
+  --sky-top: #5b9ec9;
+  --sky-mid: #a8cfe0;
+  --sky-low: #d6eaf4;
+  --cloud: #f0f7fb;
+  --paper: #fffcf8;
+  --ink: #1a2830;
+  --muted: #5a6b74;
+  --accent: #1f6e99;
+  --accent-deep: #144f72;
+  --success: #2a6e48;
+  --warn: #8c5a10;
+  --error: #9b3a2f;
+  --diff-bg: #fff7e0;
+  --diff-border: #d4a827;
+  --match-bg: #eaf7f0;
+  --match-border: #3a9e64;
+  --sand: #f4ead6;
+  --shadow: 0 14px 40px rgba(20, 50, 70, 0.16);
+  --radius: 18px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  color: var(--ink);
+  font-family: "Nunito Sans", "Segoe UI", sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  background: var(--accent-deep);
+}
+
+.horizon {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(
+    180deg,
+    var(--sky-top) 0%,
+    var(--sky-mid) 40%,
+    var(--sky-low) 70%,
+    #cce0ef 100%
+  );
+}
+
+.page {
+  position: relative;
+  z-index: 1;
+  width: min(80rem, calc(100% - 1.25rem));
+  margin: 0 auto;
+  padding: 2.5rem 0 3.5rem;
+}
+
+/* ── Masthead ── */
+
+.masthead {
+  color: var(--accent-deep);
+  margin-bottom: 1.5rem;
+}
+
+.kicker {
+  margin: 0 0 0.4rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+h1,
+h2 {
+  font-family: Fraunces, Georgia, serif;
+  font-optical-sizing: auto;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+.lede {
+  margin: 0.7rem 0 0;
+  max-width: 32rem;
+  color: var(--accent-deep);
+}
+
+/* ── Cards ── */
+
+.card {
+  background: var(--paper);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.35rem 1.5rem 1.5rem;
+  margin-bottom: 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+}
+
+.card-title {
+  margin: 0 0 0.3rem;
+  font-size: 1.3rem;
+  font-weight: 500;
+}
+
+/* ── Search card ── */
+
+.search-card {
+  max-width: 32rem;
+}
+
+.search-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.search-label {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.search-controls {
+  display: flex;
+  gap: 0.6rem;
+  align-items: stretch;
+}
+
+input[type="text"] {
+  flex: 1;
+  border: 1.5px solid #c8d8e4;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.1rem;
+  padding: 0.6rem 0.85rem;
+  letter-spacing: 0.12em;
+}
+
+input[type="text"]:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+.lookup-btn {
+  background: var(--accent);
+  color: #fff;
+  border: 0;
+  border-radius: 10px;
+  padding: 0.6rem 1.3rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.lookup-btn:hover:not(:disabled) {
+  background: var(--accent-deep);
+}
+
+.lookup-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.zip-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.zip-error {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--error);
+  font-weight: 600;
+}
+
+/* ── Location heading ── */
+
+.location-name {
+  margin: 0 0 0.85rem;
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1.4rem;
+  font-weight: 500;
+  color: var(--accent-deep);
+}
+
+/* ── Side-by-side cards row ── */
+
+.cards-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.source-card {
+  margin-bottom: 0;
+}
+
+.source-url {
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.source-url a {
+  color: var(--accent);
+}
+
+/* ── Loading ── */
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-height: 6rem;
+  color: var(--muted);
+}
+
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 3px solid #cde0ec;
+  border-top-color: var(--accent);
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Error ── */
+
+.error {
+  margin: 0;
+  color: var(--error);
+  min-height: 4rem;
+  font-weight: 600;
+}
+
+/* ── Weather data rows ── */
+
+.weather-data {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.data-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid rgba(28, 42, 48, 0.07);
+}
+
+.data-row:last-child {
+  border-bottom: none;
+}
+
+.data-label {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+
+.data-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+/* ── Diff highlight ── */
+
+.data-row.diff {
+  background: var(--diff-bg);
+  border-radius: 8px;
+  padding-left: 0.6rem;
+  padding-right: 0.6rem;
+  margin: 0 -0.6rem;
+  border-bottom-color: transparent;
+  border-left: 3px solid var(--diff-border);
+}
+
+.data-row.match {
+  background: var(--match-bg);
+  border-radius: 8px;
+  padding-left: 0.6rem;
+  padding-right: 0.6rem;
+  margin: 0 -0.6rem;
+  border-bottom-color: transparent;
+  border-left: 3px solid var(--match-border);
+}
+
+/* ── Comparison summary card ── */
+
+.comparison-card {
+  margin-bottom: 1.1rem;
+}
+
+.comparison-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid rgba(28, 42, 48, 0.07);
+  font-size: 0.95rem;
+}
+
+.comparison-item:last-child {
+  border-bottom: none;
+}
+
+.comparison-badge {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  margin-top: 0.15rem;
+}
+
+.badge-agree {
+  background: var(--match-bg);
+  color: var(--success);
+}
+
+.badge-differ {
+  background: var(--diff-bg);
+  color: var(--warn);
+}
+
+.comparison-text {
+  color: var(--ink);
+}
+
+/* ── Footer ── */
+
+.site-footer {
+  color: #cde6f2;
+  font-size: 0.85rem;
+}
+
+.site-footer a {
+  color: #fff;
+}
+
+.site-footer p {
+  margin: 0 0 0.45rem;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 680px) {
+  .cards-row {
+    grid-template-columns: 1fr;
+  }
+
+  .search-card {
+    max-width: 100%;
+  }
+}
