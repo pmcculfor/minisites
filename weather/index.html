@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Weather Comparison</title>
+    <meta
+      name="description"
+      content="Compare current weather from Open-Meteo and the National Weather Service side by side for any US ZIP code."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Nunito+Sans:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="horizon" aria-hidden="true"></div>
+    <main class="page">
+      <header class="masthead">
+        <p class="kicker">Side-by-side weather comparison</p>
+        <h1>Weather Comparison</h1>
+        <p class="lede">Enter a US ZIP code to compare current conditions from two independent sources.</p>
+      </header>
+
+      <section class="card search-card">
+        <form id="zip-form" autocomplete="off">
+          <div class="search-row">
+            <label for="zip-input" class="search-label">ZIP Code</label>
+            <div class="search-controls">
+              <input
+                type="text"
+                id="zip-input"
+                name="zip"
+                inputmode="numeric"
+                pattern="\d{5}"
+                maxlength="5"
+                placeholder="e.g. 90210"
+                required
+                aria-describedby="zip-hint"
+              />
+              <button type="submit" class="lookup-btn">Look Up</button>
+            </div>
+            <p id="zip-hint" class="zip-hint">5-digit US ZIP code</p>
+            <p id="zip-error" class="zip-error" hidden></p>
+          </div>
+        </form>
+      </section>
+
+      <div id="results" hidden>
+        <p id="location-name" class="location-name"></p>
+
+        <div class="cards-row">
+          <!-- Open-Meteo card -->
+          <article
+            id="om-card"
+            class="card source-card"
+            aria-busy="true"
+            aria-live="polite"
+          >
+            <h2 class="card-title">Open-Meteo</h2>
+            <p class="source-url"><a href="https://open-meteo.com/" target="_blank" rel="noopener">open-meteo.com</a></p>
+
+            <div id="om-loading" class="loading">
+              <span class="spinner" aria-hidden="true"></span>
+              <p>Fetching Open-Meteo data…</p>
+            </div>
+
+            <p id="om-error" class="error" hidden></p>
+
+            <div id="om-data" class="weather-data" hidden>
+              <div class="data-row" id="om-temp-row">
+                <span class="data-label">Temperature</span>
+                <span class="data-value" id="om-temp"></span>
+              </div>
+              <div class="data-row" id="om-cond-row">
+                <span class="data-label">Conditions</span>
+                <span class="data-value" id="om-cond"></span>
+              </div>
+              <div class="data-row" id="om-wind-row">
+                <span class="data-label">Wind</span>
+                <span class="data-value" id="om-wind"></span>
+              </div>
+            </div>
+          </article>
+
+          <!-- NWS card -->
+          <article
+            id="nws-card"
+            class="card source-card"
+            aria-busy="true"
+            aria-live="polite"
+          >
+            <h2 class="card-title">National Weather Service</h2>
+            <p class="source-url"><a href="https://www.weather.gov/" target="_blank" rel="noopener">weather.gov</a></p>
+
+            <div id="nws-loading" class="loading">
+              <span class="spinner" aria-hidden="true"></span>
+              <p>Fetching NWS data…</p>
+            </div>
+
+            <p id="nws-error" class="error" hidden></p>
+
+            <div id="nws-data" class="weather-data" hidden>
+              <div class="data-row" id="nws-temp-row">
+                <span class="data-label">Temperature</span>
+                <span class="data-value" id="nws-temp"></span>
+              </div>
+              <div class="data-row" id="nws-cond-row">
+                <span class="data-label">Conditions</span>
+                <span class="data-value" id="nws-cond"></span>
+              </div>
+              <div class="data-row" id="nws-wind-row">
+                <span class="data-label">Wind</span>
+                <span class="data-value" id="nws-wind"></span>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- Comparison summary -->
+        <div id="comparison-card" class="card comparison-card" hidden>
+          <h2 class="card-title">Comparison</h2>
+          <div id="comparison-body"></div>
+        </div>
+      </div>
+
+      <footer class="site-footer">
+        <p>
+          Weather from <a href="https://open-meteo.com/">Open-Meteo</a> (CC BY 4.0)
+          and the <a href="https://www.weather.gov/">National Weather Service</a>.
+          ZIP geocoding by <a href="https://www.zippopotam.us/">zippopotam.us</a>.
+        </p>
+        <p>For informational purposes only. Do not use for safety-critical decisions.</p>
+      </footer>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
